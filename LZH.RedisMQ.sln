@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMQ", "src\RedisMQ\RedisMQ.csproj", "{E8A9898C-54EE-4533-8220-4B9FA566CF14}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LZH.RedisMQ", "src\LZH.RedisMQ\LZH.RedisMQ.csproj", "{E8A9898C-54EE-4533-8220-4B9FA566CF14}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1AAA3BBD-B4CF-472E-81A7-B5E5B59D959A}"
 EndProject
