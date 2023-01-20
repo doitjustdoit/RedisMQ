@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Core Community. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using LZH.RedisMQ.Messages;
@@ -11,16 +14,16 @@ namespace LZH.RedisMQ.RedisStream
         private const string Headers = "headers";
         private const string Body = "body";
 
-        public static NameValueEntry[] AsStreamEntries(this Message message)
+        public static NameValueEntry[] AsStreamEntries(this TransportMessage message)
         {
             return new[]
             {
                 new NameValueEntry(Headers, ToJson(message.Headers)),
-                new NameValueEntry(Body, ToJson(message.Value))
+                new NameValueEntry(Body, ToJson(message.Body))
             };
         }
 
-        public static Message Create(StreamEntry streamEntry, string? groupId = null)
+        public static TransportMessage Create(StreamEntry streamEntry, string? groupId = null)
         {
             var headersRaw = streamEntry[Headers];
             if (headersRaw.IsNullOrEmpty)
@@ -28,15 +31,15 @@ namespace LZH.RedisMQ.RedisStream
                 throw new ArgumentException($"Redis stream entry with id {streamEntry.Id} missing cap headers");
             }
                 
-            var headers = JsonSerializer.Deserialize<IDictionary<string, string?>>(headersRaw)!;
+            var headers = JsonSerializer.Deserialize<IDictionary<string, string?>>(headersRaw!)!;
 
             var bodyRaw = streamEntry[Body];
 
-            var body = !bodyRaw.IsNullOrEmpty ? JsonSerializer.Deserialize<byte[]>(bodyRaw) : null;
+            var body = !bodyRaw.IsNullOrEmpty ? JsonSerializer.Deserialize<byte[]>(bodyRaw!) : null;
 
             headers.TryAdd(Messages.Headers.Group, groupId);
 
-            return new Message(headers, body);
+            return new TransportMessage(headers, body);
         }
 
         private static RedisValue ToJson(object? obj)

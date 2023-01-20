@@ -3,7 +3,7 @@
 
 using System;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     /// <inheritdoc />
     /// <summary>

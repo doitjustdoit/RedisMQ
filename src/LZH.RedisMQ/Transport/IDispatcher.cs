@@ -1,7 +1,8 @@
 ﻿// Copyright (c) .NET Core Community. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using DotNetCore.CAP.Internal;
+using System;
+using System.Threading.Tasks;
 using LZH.RedisMQ.Internal;
 using LZH.RedisMQ.Messages;
 
@@ -9,8 +10,11 @@ namespace LZH.RedisMQ.Transport
 {
     public interface IDispatcher : IProcessingServer
     {
-        void EnqueueToPublish(Message message);
+        ValueTask EnqueueToPublish(Message message);
 
-        void EnqueueToExecute(Message message, ConsumerExecutorDescriptor descriptor);
+        ValueTask EnqueueToExecute(Message message, ConsumerExecutorDescriptor? descriptor = null);
+
+        ValueTask EnqueueToScheduler(Message message, DateTime publishTime, object? transaction = null);
+        
     }
 }

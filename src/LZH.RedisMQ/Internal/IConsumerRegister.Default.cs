@@ -7,28 +7,26 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetCore.CAP.Diagnostics;
-using DotNetCore.CAP.Messages;
-using DotNetCore.CAP.Persistence;
-using DotNetCore.CAP.Serialization;
-using DotNetCore.CAP.Transport;
+using LZH.RedisMQ.Insternal;
+using LZH.RedisMQ.Messages;
+using LZH.RedisMQ.Serialization;
+using LZH.RedisMQ.Transport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     internal class ConsumerRegister : IConsumerRegister
     {
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly TimeSpan _pollingDelay = TimeSpan.FromSeconds(1);
-        private readonly CapOptions _options;
+        private readonly RedisMQOptions _options;
 
         private IConsumerClientFactory _consumerClientFactory = default!;
         private IDispatcher _dispatcher = default!;
         private ISerializer _serializer = default!;
-        private IDataStorage _storage = default!;
 
         private MethodMatcherCache _selector = default!;
         private CancellationTokenSource _cts = new();
@@ -37,16 +35,11 @@ namespace DotNetCore.CAP.Internal
         private bool _disposed;
         private bool _isHealthy = true;
 
-        // diagnostics listener
-        // ReSharper disable once InconsistentNaming
-        private static readonly DiagnosticListener s_diagnosticListener =
-            new DiagnosticListener(CapDiagnosticListenerNames.DiagnosticListenerName);
-
         public ConsumerRegister(ILogger<ConsumerRegister> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
-            _options = serviceProvider.GetRequiredService<IOptions<CapOptions>>().Value;
+            _options = serviceProvider.GetRequiredService<IOptions<RedisMQOptions>>().Value;
         }
 
         public bool IsHealthy()
@@ -59,7 +52,6 @@ namespace DotNetCore.CAP.Internal
             _selector = _serviceProvider.GetRequiredService<MethodMatcherCache>();
             _dispatcher = _serviceProvider.GetRequiredService<IDispatcher>();
             _serializer = _serviceProvider.GetRequiredService<ISerializer>();
-            _storage = _serviceProvider.GetRequiredService<IDataStorage>();
             _consumerClientFactory = _serviceProvider.GetRequiredService<IConsumerClientFactory>();
 
             stoppingToken.Register(Dispose);
@@ -179,7 +171,6 @@ namespace DotNetCore.CAP.Internal
                 long? tracingTimestamp = null;
                 try
                 {
-                    tracingTimestamp = TracingBefore(transportMessage, _serverAddress);
 
                     var name = transportMessage.GetName();
                     var group = transportMessage.GetGroup()!;
@@ -199,7 +190,7 @@ namespace DotNetCore.CAP.Internal
                             throw ex;
                         }
 
-                        var type = executor!.Parameters.FirstOrDefault(x => x.IsFromCap == false)?.ParameterType;
+                        var type = executor!.Parameters.FirstOrDefault(x => x.IsFromRedisHeader == false)?.ParameterType;
                         message = _serializer.DeserializeAsync(transportMessage, type).GetAwaiter().GetResult();
                         message.RemoveException();
                     }
@@ -237,8 +228,6 @@ namespace DotNetCore.CAP.Internal
                     {
                         var content = _serializer.Serialize(message);
 
-                        _storage.StoreReceivedExceptionMessage(name, group, content);
-
                         client.Commit(sender);
 
                         try
@@ -257,18 +246,11 @@ namespace DotNetCore.CAP.Internal
                             _logger.ExecutedThresholdCallbackFailed(e);
                         }
 
-                        TracingAfter(tracingTimestamp, transportMessage, _serverAddress);
                     }
                     else
                     {
-                        var mediumMessage = _storage.StoreReceivedMessage(name, group, message);
-                        mediumMessage.Origin = message;
-
                         client.Commit(sender);
-
-                        TracingAfter(tracingTimestamp, transportMessage, _serverAddress);
-
-                        _dispatcher.EnqueueToExecute(mediumMessage, executor!);
+                        _dispatcher.EnqueueToExecute(message, executor!);
                     }
                 }
                 catch (Exception e)
@@ -281,116 +263,14 @@ namespace DotNetCore.CAP.Internal
                 }
             };
 
-            client.OnLog += WriteLog;
         }
 
-        private void WriteLog(object sender, LogMessageEventArgs logmsg)
-        {
-            switch (logmsg.LogType)
-            {
-                case MqLogType.ConsumerCancelled:
-                    _logger.LogWarning("RabbitMQ consumer cancelled. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.ConsumerRegistered:
-                    _isHealthy = true;
-                    _logger.LogInformation("RabbitMQ consumer registered. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.ConsumerUnregistered:
-                    _logger.LogWarning("RabbitMQ consumer unregistered. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.ConsumerShutdown:
-                    _isHealthy = false;
-                    _logger.LogWarning("RabbitMQ consumer shutdown. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.ConsumeError:
-                    _logger.LogError("Kafka client consume error. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.ConsumeRetries:
-                    _logger.LogWarning("Kafka client consume exception, retying... --> " + logmsg.Reason);
-                    break;
-                case MqLogType.ServerConnError:
-                    _isHealthy = false;
-                    _logger.LogCritical("Kafka server connection error. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.ExceptionReceived:
-                    _logger.LogError("AzureServiceBus subscriber received an error. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.AsyncErrorEvent:
-                    _logger.LogError("NATS subscriber received an error. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.ConnectError:
-                    _isHealthy = false;
-                    _logger.LogError("NATS server connection error. -->  " + logmsg.Reason);
-                    break;
-                case MqLogType.InvalidIdFormat:
-                    _logger.LogError("AmazonSQS subscriber delete inflight message failed, invalid id. --> " + logmsg.Reason);
-                    break;
-                case MqLogType.MessageNotInflight:
-                    _logger.LogError("AmazonSQS subscriber change message's visibility failed, message isn't in flight. --> " + logmsg.Reason);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
 
         #region tracing
 
-        private long? TracingBefore(TransportMessage message, BrokerAddress broker)
-        {
-            if (s_diagnosticListener.IsEnabled(CapDiagnosticListenerNames.BeforeConsume))
-            {
-                var eventData = new CapEventDataSubStore()
-                {
-                    OperationTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                    Operation = message.GetName(),
-                    BrokerAddress = broker,
-                    TransportMessage = message
-                };
-
-                s_diagnosticListener.Write(CapDiagnosticListenerNames.BeforeConsume, eventData);
-
-                return eventData.OperationTimestamp;
-            }
-
-            return null;
-        }
-
-        private void TracingAfter(long? tracingTimestamp, TransportMessage message, BrokerAddress broker)
-        {
-            if (tracingTimestamp != null && s_diagnosticListener.IsEnabled(CapDiagnosticListenerNames.AfterConsume))
-            {
-                var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                var eventData = new CapEventDataSubStore()
-                {
-                    OperationTimestamp = now,
-                    Operation = message.GetName(),
-                    BrokerAddress = broker,
-                    TransportMessage = message,
-                    ElapsedTimeMs = now - tracingTimestamp.Value
-                };
-
-                s_diagnosticListener.Write(CapDiagnosticListenerNames.AfterConsume, eventData);
-            }
-        }
-
         private void TracingError(long? tracingTimestamp, TransportMessage message, BrokerAddress broker, Exception ex)
         {
-            if (tracingTimestamp != null && s_diagnosticListener.IsEnabled(CapDiagnosticListenerNames.ErrorConsume))
-            {
-                var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-                var eventData = new CapEventDataSubStore()
-                {
-                    OperationTimestamp = now,
-                    Operation = message.GetName(),
-                    BrokerAddress = broker,
-                    TransportMessage = message,
-                    ElapsedTimeMs = now - tracingTimestamp.Value,
-                    Exception = ex
-                };
-
-                s_diagnosticListener.Write(CapDiagnosticListenerNames.ErrorConsume, eventData);
-            }
+           _logger.LogError(ex,$"timestamp: {tracingTimestamp} message: {message} broker: {broker} exception message: {ex.Message}");
         }
 
         #endregion

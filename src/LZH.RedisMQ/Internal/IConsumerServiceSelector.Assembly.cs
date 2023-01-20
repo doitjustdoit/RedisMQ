@@ -5,9 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using LZH.RedisMQ.Internal;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     /// <inheritdoc />
     /// <summary>
@@ -30,7 +29,7 @@ namespace DotNetCore.CAP.Internal
 
             var assembliesToScan = _assemblies.Distinct().ToArray();
 
-            var capSubscribeTypeInfo = typeof(ICapSubscribe).GetTypeInfo();
+            var capSubscribeTypeInfo = typeof(IRedisMQSubscribe).GetTypeInfo();
 
             foreach (var type in assembliesToScan.SelectMany(a => a.DefinedTypes))
             {

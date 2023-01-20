@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Threading.Tasks;
-using DotNetCore.CAP.Transport;
 using LZH.RedisMQ.Messages;
 
 namespace LZH.RedisMQ.Transport

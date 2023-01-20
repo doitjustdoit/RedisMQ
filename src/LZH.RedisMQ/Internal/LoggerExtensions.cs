@@ -4,16 +4,16 @@
 using System;
 using Microsoft.Extensions.Logging;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Insternal
 {
     internal static class LoggerExtensions
     {
-        public static void ConsumerExecutedAfterThreshold(this ILogger logger, string messageId, int retries)
+        public static void ConsumerExecutedAfterThreshold(this ILogger logger, string messageId, uint retries)
         {
             logger.LogWarning($"The Subscriber of the message({messageId}) still fails after {retries}th executions and we will stop retrying.");
         }
 
-        public static void SenderAfterThreshold(this ILogger logger, string messageId, int retries)
+        public static void SenderAfterThreshold(this ILogger logger, string messageId, uint retries)
         {
             logger.LogWarning($"The Publisher of the message({messageId}) still fails after {retries}th sends and we will stop retrying.");
         }

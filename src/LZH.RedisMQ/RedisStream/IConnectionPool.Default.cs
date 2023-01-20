@@ -18,11 +18,11 @@ namespace LZH.RedisMQ.RedisStream
 
         private readonly ILoggerFactory _loggerFactory;
         private readonly SemaphoreSlim _poolLock = new(1);
-        private readonly CapRedisOptions _redisOptions;
+        private readonly RedisMQOptions _redisOptions;
         private bool _isDisposed;
         private bool _poolAlreadyConfigured;
 
-        public RedisConnectionPool(IOptions<CapRedisOptions> options, ILoggerFactory loggerFactory)
+        public RedisConnectionPool(IOptions<RedisMQOptions> options, ILoggerFactory loggerFactory)
         {
             _redisOptions = options.Value;
             _loggerFactory = loggerFactory;

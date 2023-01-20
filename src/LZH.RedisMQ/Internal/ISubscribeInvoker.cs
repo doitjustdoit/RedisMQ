@@ -3,9 +3,8 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using LZH.RedisMQ.Internal;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     /// <summary>
     /// Perform user definition method of consumers.

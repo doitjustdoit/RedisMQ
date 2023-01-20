@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace DotNetCore.CAP.RedisStreams
+namespace LZH.RedisMQ.RedisStream
 {
     public class AsyncLazyRedisConnection : Lazy<Task<RedisConnection>>
     {
-        public AsyncLazyRedisConnection(CapRedisOptions redisOptions,
+        public AsyncLazyRedisConnection(RedisMQOptions redisOptions,
             ILogger<AsyncLazyRedisConnection> logger) : base(() => ConnectAsync(redisOptions, logger))
         {
         }
@@ -21,22 +21,19 @@ namespace DotNetCore.CAP.RedisStreams
             return Value.GetAwaiter();
         }
 
-        private static async Task<RedisConnection> ConnectAsync(CapRedisOptions redisOptions,
+        private static async Task<RedisConnection> ConnectAsync(RedisMQOptions redisOptions,
             ILogger<AsyncLazyRedisConnection> logger)
         {
             int attemp = 1;
-
             var redisLogger = new RedisLogger(logger);
 
             ConnectionMultiplexer? connection = null;
 
             while (attemp <= 5)
             {
-                connection = await ConnectionMultiplexer.ConnectAsync(redisOptions.Configuration, redisLogger)
+                connection = await ConnectionMultiplexer.ConnectAsync(redisOptions.Configuration,redisLogger)
                 .ConfigureAwait(false);
-
                 connection.LogEvents(logger);
-
                 if (!connection.IsConnected)
                 {
                     logger.LogWarning($"Can't establish redis connection,trying to establish connection [attemp {attemp}].");

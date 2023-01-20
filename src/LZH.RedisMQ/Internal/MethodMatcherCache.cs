@@ -6,9 +6,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using LZH.RedisMQ.Internal;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     public class MethodMatcherCache
     {

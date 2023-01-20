@@ -2,9 +2,8 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using LZH.RedisMQ.Internal;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     /// <summary>
     /// Defines an interface for selecting an consumer service method to invoke for the current message.

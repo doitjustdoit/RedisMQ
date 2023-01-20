@@ -21,6 +21,8 @@ namespace LZH.RedisMQ.Messages
         public IDictionary<string,string?> Headers { get; set; }
         
         public object? Value { get; set; }
+
+       
     }
     
     public static class MessageExtensions
@@ -29,13 +31,20 @@ namespace LZH.RedisMQ.Messages
         {
             return message.Headers[Headers.MessageId]!;
         }
-
+        public static string GetName(this Message message)
+        {
+            return message.Headers[Messages.Headers.MessageName]!;
+        }
         public static string? GetGroup(this Message message)
         {
             message.Headers.TryGetValue(Headers.Group, out var value);
             return value;
         }
-
+        public static string? GetCallbackName(this Message message)
+        {
+            message.Headers.TryGetValue(Headers.CallbackName, out var value);
+            return value;
+        }
         public static bool HasException(this Message message)
         {
             return message.Headers.ContainsKey(Headers.Exception);
@@ -47,10 +56,28 @@ namespace LZH.RedisMQ.Messages
 
             message.Headers[Headers.Exception] = msg;
         }
+        public static uint GetRetry(this Message message)
+        {
+            return Convert.ToUInt32( message.Headers[Headers.Retries]);
+        }
+        public static uint AddRetry(this Message message,uint add=1)
+        {
+            var exist=message.Headers.TryGetValue(Headers.Retries,out string? retryStr);
+            if (exist)
+            {
+                var retry = Convert.ToUInt32(retryStr);
+                retry+=add;
+                message.Headers[Headers.Retries] = retry.ToString();
+                return retry;
+            }
 
+            message.Headers[Headers.Retries] = "1";
+            return 1;
+        }
         public static void RemoveException(this Message message)
         {
             message.Headers.Remove(Headers.Exception);
         }
+        
     }
 }

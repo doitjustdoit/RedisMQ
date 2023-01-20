@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using DotNetCore.CAP.Transport;
 using LZH.RedisMQ.Messages;
 
 namespace LZH.RedisMQ.Transport

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Core Community. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using DotNetCore.CAP.RedisStreams;
 using LZH.RedisMQ.Transport;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,9 +11,9 @@ namespace LZH.RedisMQ.RedisStream
     {
         private readonly ILogger<RedisConsumerClient> _logger;
         private readonly IRedisStreamManager _redis;
-        private readonly IOptions<CapRedisOptions> _redisOptions;
+        private readonly IOptions<RedisMQOptions> _redisOptions;
 
-        public RedisConsumerClientFactory(IOptions<CapRedisOptions> redisOptions, IRedisStreamManager redis,
+        public RedisConsumerClientFactory(IOptions<RedisMQOptions> redisOptions, IRedisStreamManager redis,
             ILogger<RedisConsumerClient> logger)
         {
             _redisOptions = redisOptions;

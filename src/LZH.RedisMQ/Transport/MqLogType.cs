@@ -3,7 +3,7 @@
 
 using System;
 
-namespace DotNetCore.CAP.Transport
+namespace LZH.RedisMQ.Transport
 {
     public enum MqLogType
     {

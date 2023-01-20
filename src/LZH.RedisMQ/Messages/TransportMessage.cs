@@ -32,7 +32,10 @@ namespace LZH.RedisMQ.Messages
         {
             return Headers[Messages.Headers.MessageId]!;
         }
-
+        public string GetName()
+        {
+            return Headers[Messages.Headers.MessageName]!;
+        }
         public string? GetGroup()
         {
             return Headers.TryGetValue(Messages.Headers.Group, out var value) ? value : null;

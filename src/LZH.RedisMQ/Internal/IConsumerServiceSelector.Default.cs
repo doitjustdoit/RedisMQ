@@ -11,17 +11,16 @@ using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using LZH.RedisMQ.Internal;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     /// <inheritdoc />
     /// <summary>
-    /// A default <see cref="T:DotNetCore.CAP.Abstractions.IConsumerServiceSelector" /> implementation.
+    /// A default <see cref="IConsumerServiceSelector" /> implementation.
     /// </summary>
     public class ConsumerServiceSelector : IConsumerServiceSelector
     {
-        private readonly CapOptions _capOptions;
+        private readonly RedisMQOptions _redisMQOptions;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<ConsumerServiceSelector> _logger;
 
@@ -36,7 +35,7 @@ namespace DotNetCore.CAP.Internal
         public ConsumerServiceSelector(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            _capOptions = serviceProvider.GetRequiredService<IOptions<CapOptions>>().Value;
+            _redisMQOptions = serviceProvider.GetRequiredService<IOptions<RedisMQOptions>>().Value;
             _logger = serviceProvider.GetRequiredService<ILogger<ConsumerServiceSelector>>();
             _cacheList = new ConcurrentDictionary<string, List<RegexExecuteDescriptor<ConsumerExecutorDescriptor>>>();
         }
@@ -77,7 +76,7 @@ namespace DotNetCore.CAP.Internal
         {
             var executorDescriptorList = new List<ConsumerExecutorDescriptor>();
 
-            var capSubscribeTypeInfo = typeof(ICapSubscribe).GetTypeInfo();
+            var capSubscribeTypeInfo = typeof(IRedisMQSubscribe).GetTypeInfo();
             var serviceCollection = provider.GetRequiredService<IServiceCollection>();
 
             foreach (var service in serviceCollection
@@ -151,7 +150,7 @@ namespace DotNetCore.CAP.Internal
                         {
                             Name = parameter.Name,
                             ParameterType = parameter.ParameterType,
-                            IsFromCap = parameter.GetCustomAttributes(typeof(FromCapAttribute)).Any()
+                            IsFromRedisHeader = parameter.GetCustomAttributes(typeof(FromRedisAttribute)).Any()
                                 || typeof(CancellationToken).IsAssignableFrom(parameter.ParameterType)
                         }).ToList();
 
@@ -162,10 +161,10 @@ namespace DotNetCore.CAP.Internal
 
         protected virtual void SetSubscribeAttribute(TopicAttribute attribute)
         {
-            var prefix = !string.IsNullOrEmpty(_capOptions.GroupNamePrefix)
-                ? $"{_capOptions.GroupNamePrefix}."
+            var prefix = !string.IsNullOrEmpty(_redisMQOptions.GroupNamePrefix)
+                ? $"{_redisMQOptions.GroupNamePrefix}."
                 : string.Empty;
-            attribute.Group = $"{prefix}{attribute.Group ?? _capOptions.DefaultGroupName}.{_capOptions.Version}";
+            attribute.Group = $"{prefix}{attribute.Group ?? _redisMQOptions.DefaultGroupName}.{_redisMQOptions.Version}";
         }
 
         private ConsumerExecutorDescriptor InitDescriptor(
@@ -184,7 +183,7 @@ namespace DotNetCore.CAP.Internal
                 ImplTypeInfo = implType,
                 ServiceTypeInfo = serviceTypeInfo,
                 Parameters = parameters,
-                TopicNamePrefix = _capOptions.TopicNamePrefix
+                TopicNamePrefix = _redisMQOptions.TopicNamePrefix
             };
 
             return descriptor;

@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetCore.CAP.Internal;
+using LZH.RedisMQ.Insternal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -32,13 +32,9 @@ namespace LZH.RedisMQ.Internal
         public async Task BootstrapAsync()
         {
             _logger.LogDebug("### RedisMQ background task is starting.");
-
-            CheckRequirement();
-
             try
             {
                 _processors = _serviceProvider.GetServices<IProcessingServer>();
-
             }
             catch (Exception e)
             {
@@ -52,8 +48,6 @@ namespace LZH.RedisMQ.Internal
             _cts.Token.Register(() =>
             {
                 _logger.LogDebug("### RedisMQ background task is stopping.");
-
-
                 foreach (var item in _processors)
                 {
                     try
@@ -118,34 +112,5 @@ namespace LZH.RedisMQ.Internal
             await base.StopAsync(cancellationToken);
         }
 
-        private void CheckRequirement()
-        {
-            var marker = _serviceProvider.GetService<RedisMQMarkerService>();
-            if (marker == null)
-            {
-                throw new InvalidOperationException(
-                    "AddCap() must be added on the service collection.   eg: services.AddCap(...)");
-            }
-
-            var messageQueueMarker = _serviceProvider.GetService<RedisMessageQueueMakerService>();
-            if (messageQueueMarker == null)
-            {
-                throw new InvalidOperationException(
-                  $"You must be config transport provider for CAP!" + Environment.NewLine +
-                  $"==================================================================================" + Environment.NewLine +
-                  $"========   eg: services.AddCap( options => {{ options.UseRabbitMQ(...) }}); ========" + Environment.NewLine +
-                  $"==================================================================================");
-            }
-
-            var databaseMarker = _serviceProvider.GetService<CapStorageMarkerService>();
-            if (databaseMarker == null)
-            {
-                throw new InvalidOperationException(
-                 $"You must be config storage provider for CAP!" + Environment.NewLine +
-                 $"===================================================================================" + Environment.NewLine +
-                 $"========   eg: services.AddCap( options => {{ options.UseSqlServer(...) }}); ========" + Environment.NewLine +
-                 $"===================================================================================");
-            }
-        }
     }
 }

@@ -2,13 +2,12 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Threading.Tasks;
-using DotNetCore.CAP.Persistence;
-using LZH.RedisMQ;
+using LZH.RedisMQ.Messages;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     public interface IMessageSender
     {
-        Task<OperateResult> SendAsync(MediumMessage message);
+        Task<OperateResult> SendAsync(Message message);
     }
 }

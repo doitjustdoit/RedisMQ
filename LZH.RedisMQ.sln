@@ -6,6 +6,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1AAA3BBD-B4C
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{50272E20-B25E-4C6A-A7C9-39E598A57B01}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebapiSample", "samples\WebapiSample\WebapiSample.csproj", "{78A8592F-8BD9-444B-818A-CB60BD2AB3A6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{45FECABA-4648-4FB2-B574-AA26E49C7E5E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,8 +20,13 @@ Global
 		{E8A9898C-54EE-4533-8220-4B9FA566CF14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E8A9898C-54EE-4533-8220-4B9FA566CF14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E8A9898C-54EE-4533-8220-4B9FA566CF14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78A8592F-8BD9-444B-818A-CB60BD2AB3A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78A8592F-8BD9-444B-818A-CB60BD2AB3A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78A8592F-8BD9-444B-818A-CB60BD2AB3A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78A8592F-8BD9-444B-818A-CB60BD2AB3A6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E8A9898C-54EE-4533-8220-4B9FA566CF14} = {1AAA3BBD-B4CF-472E-81A7-B5E5B59D959A}
+		{78A8592F-8BD9-444B-818A-CB60BD2AB3A6} = {45FECABA-4648-4FB2-B574-AA26E49C7E5E}
 	EndGlobalSection
 EndGlobal

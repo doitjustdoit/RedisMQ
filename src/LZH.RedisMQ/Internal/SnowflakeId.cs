@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     public class SnowflakeId
     {
@@ -87,7 +87,7 @@ namespace DotNetCore.CAP.Internal
                     return _snowflakeId;
                 }
 
-                if (!long.TryParse(Environment.GetEnvironmentVariable("CAP_WORKERID", EnvironmentVariableTarget.Machine), out var workerId))
+                if (!long.TryParse(Environment.GetEnvironmentVariable("REDIS_WORKERID", EnvironmentVariableTarget.Machine), out var workerId))
                 {
                     workerId = Util.GenerateWorkerId(MaxWorkerId);
                 }

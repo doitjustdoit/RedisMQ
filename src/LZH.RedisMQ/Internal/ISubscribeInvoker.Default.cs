@@ -7,14 +7,12 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetCore.CAP.Filter;
-using DotNetCore.CAP.Messages;
-using DotNetCore.CAP.Serialization;
+using LZH.RedisMQ.Messages;
+using LZH.RedisMQ.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
-using LZH.RedisMQ.Internal;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     public class SubscribeInvoker : ISubscribeInvoker
     {
@@ -52,9 +50,9 @@ namespace DotNetCore.CAP.Internal
             for (var i = 0; i < parameterDescriptors.Count; i++)
             {
                 var parameterDescriptor = parameterDescriptors[i];
-                if (parameterDescriptor.IsFromCap)
+                if (parameterDescriptor.IsFromRedisHeader)
                 {
-                    executeParameters[i] = GetCapProvidedParameter(parameterDescriptor, message, cancellationToken);
+                    executeParameters[i] = GetRedisProvidedParameter(parameterDescriptor, message, cancellationToken);
                 }
                 else
                 {
@@ -87,52 +85,13 @@ namespace DotNetCore.CAP.Internal
                 }
             }
 
-            var filter = provider.GetService<ISubscribeFilter>();
-            object? resultObj = null;
-            try
-            {
-                if (filter != null)
-                {
-                    var etContext = new ExecutingContext(context, executeParameters);
-                    filter.OnSubscribeExecuting(etContext);
-                    executeParameters = etContext.Arguments;
-                }
-
-                resultObj = await ExecuteWithParameterAsync(executor, obj, executeParameters);
-
-                if (filter != null)
-                {
-                    var edContext = new ExecutedContext(context, resultObj);
-                    filter.OnSubscribeExecuted(edContext);
-                    resultObj = edContext.Result;
-                }
-            }
-            catch (Exception e)
-            {
-                if (filter != null)
-                {
-                    var exContext = new ExceptionContext(context, e);
-                    filter.OnSubscribeException(exContext);
-                    if (!exContext.ExceptionHandled)
-                    {
-                        throw exContext.Exception;
-                    }
-
-                    if (exContext.Result != null)
-                    {
-                        resultObj = exContext.Result;
-                    }
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            
+            object? resultObj = await ExecuteWithParameterAsync(executor, obj, executeParameters);
 
             return new ConsumerExecutedResult(resultObj, message.GetId(), message.GetCallbackName());
         }
 
-        private static object GetCapProvidedParameter(ParameterDescriptor parameterDescriptor, Message message,
+        private static object GetRedisProvidedParameter(ParameterDescriptor parameterDescriptor, Message message,
             CancellationToken cancellationToken)
         {
             if (typeof(CancellationToken).IsAssignableFrom(parameterDescriptor.ParameterType))
@@ -140,9 +99,9 @@ namespace DotNetCore.CAP.Internal
                 return cancellationToken;
             }
 
-            if (parameterDescriptor.ParameterType.IsAssignableFrom(typeof(CapHeader)))
+            if (parameterDescriptor.ParameterType.IsAssignableFrom(typeof(RedisHeader)))
             {
-                return new CapHeader(message.Headers);
+                return new RedisHeader(message.Headers);
             }
 
             throw new ArgumentException(parameterDescriptor.Name);

@@ -4,7 +4,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using DotNetCore.CAP.Internal;
+using LZH.RedisMQ.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -12,26 +12,13 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace LZH.RedisMQ
 {
+   
     /// <summary>
-    /// Used to verify cap service was called on a ServiceCollection
+    /// Allows fine grained configuration of RedisMQ services.
     /// </summary>
-    public class RedisMQMarkerService
+    public sealed class RedisMQBuilder
     {
-    }
-
-    /// <summary>
-    /// Used to verify RedisMQ message queue extension was added on a ServiceCollection
-    /// </summary>
-    public class RedisMessageQueueMakerService
-    {
-    }
-
-    /// <summary>
-    /// Allows fine grained configuration of CAP services.
-    /// </summary>
-    public sealed class CapBuilder
-    {
-        public CapBuilder(IServiceCollection services)
+        public RedisMQBuilder(IServiceCollection services)
         {
             Services = services;
         }
@@ -45,7 +32,7 @@ namespace LZH.RedisMQ
         /// Registers subscribers from the specified assemblies.
         /// </summary>
         /// <param name="assemblies">Assemblies to scan subscriber</param>
-        public CapBuilder AddSubscriberAssembly(params Assembly[] assemblies)
+        public RedisMQBuilder AddSubscriberAssembly(params Assembly[] assemblies)
         {
             if (assemblies == null) throw new ArgumentNullException(nameof(assemblies));
 
@@ -60,7 +47,7 @@ namespace LZH.RedisMQ
         /// Registers subscribers from the specified types.
         /// </summary>
         /// <param name="handlerAssemblyMarkerTypes"></param>
-        public CapBuilder AddSubscriberAssembly(params Type[] handlerAssemblyMarkerTypes)
+        public RedisMQBuilder AddSubscriberAssembly(params Type[] handlerAssemblyMarkerTypes)
         {
             if (handlerAssemblyMarkerTypes == null) throw new ArgumentNullException(nameof(handlerAssemblyMarkerTypes));
 

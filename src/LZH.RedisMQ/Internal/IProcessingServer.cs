@@ -3,8 +3,9 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
-namespace DotNetCore.CAP.Internal
+namespace LZH.RedisMQ.Internal
 {
     /// <inheritdoc />
     /// <summary>
@@ -12,8 +13,6 @@ namespace DotNetCore.CAP.Internal
     /// </summary>
     public interface IProcessingServer : IDisposable
     {
-        void Pulse() { }
-
         void Start(CancellationToken stoppingToken);
     }
 }

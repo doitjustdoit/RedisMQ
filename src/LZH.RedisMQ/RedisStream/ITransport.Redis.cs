@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DotNetCore.CAP.RedisStreams;
+using LZH.RedisMQ.Internal;
+using LZH.RedisMQ.Messages;
+using LZH.RedisMQ.Transport;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

@@ -6,27 +6,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetCore.CAP.Transport;
+using LZH.RedisMQ.Messages;
+using LZH.RedisMQ.Transport;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using LZH.RedisMQ.Messages;
-using LZH.RedisMQ.RedisStream;
-using LZH.RedisMQ.Transport;
 using StackExchange.Redis;
 
-namespace DotNetCore.CAP.RedisStreams
+namespace LZH.RedisMQ.RedisStream
 {
     internal class RedisConsumerClient : IConsumerClient
     {
         private readonly string _groupId;
         private readonly ILogger<RedisConsumerClient> _logger;
-        private readonly IOptions<CapRedisOptions> _options;
+        private readonly IOptions<RedisMQOptions> _options;
         private readonly IRedisStreamManager _redis;
         private string[] _topics = default!;
 
         public RedisConsumerClient(string groupId,
             IRedisStreamManager redis,
-            IOptions<CapRedisOptions> options,
+            IOptions<RedisMQOptions> options,
             ILogger<RedisConsumerClient> logger
         )
         {
@@ -95,7 +93,7 @@ namespace DotNetCore.CAP.RedisStreams
             _ = ConsumeMessages(newMsgs, StreamPosition.NewMessages);
         }
 
-        private async Task ConsumeMessages(IAsyncEnumerable<IEnumerable<RedisStream>> streamsSet, RedisValue position)
+        private async Task ConsumeMessages(IAsyncEnumerable<IEnumerable<StackExchange.Redis.RedisStream>> streamsSet, RedisValue position)
         {
             await foreach (var set in streamsSet)
             {

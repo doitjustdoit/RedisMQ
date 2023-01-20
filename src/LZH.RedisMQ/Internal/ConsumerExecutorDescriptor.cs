@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using DotNetCore.CAP.Internal;
+using LZH.RedisMQ.Insternal;
 using Microsoft.Extensions.Logging;
 
 namespace LZH.RedisMQ.Internal
@@ -116,6 +116,6 @@ namespace LZH.RedisMQ.Internal
 
         public Type ParameterType { get; set; } = default!;
 
-        public bool IsFromCap { get; set; }
+        public bool IsFromRedisHeader { get; set; }
     }
 }
