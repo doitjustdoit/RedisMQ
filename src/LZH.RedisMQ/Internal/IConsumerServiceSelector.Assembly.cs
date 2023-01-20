@@ -29,7 +29,7 @@ namespace LZH.RedisMQ.Internal
 
             var assembliesToScan = _assemblies.Distinct().ToArray();
 
-            var capSubscribeTypeInfo = typeof(IRedisMQSubscribe).GetTypeInfo();
+            var capSubscribeTypeInfo = typeof(IRedisSubscribe).GetTypeInfo();
 
             foreach (var type in assembliesToScan.SelectMany(a => a.DefinedTypes))
             {

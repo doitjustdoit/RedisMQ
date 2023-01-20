@@ -5,10 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DotNetCore.CAP.RedisStreams;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace DotNetCore.CAP.RedisStreams
+namespace LZH.RedisMQ.RedisStream
 {
     internal static class RedisStreamManagerExtensions
     {
@@ -19,6 +20,7 @@ namespace DotNetCore.CAP.RedisStreams
                 var created = false;
                 try
                 {
+                    var isConnected = database.IsConnected("ping");
                     await database.TryGetOrCreateStreamConsumerGroupAsync(position.Key, consumerGroup)
                         .ConfigureAwait(false);
 
@@ -66,6 +68,8 @@ namespace DotNetCore.CAP.RedisStreams
                 var groupInfo = await database.StreamGroupInfoAsync(stream);
                 if (groupInfo.Any(g => g.Name == consumerGroup))
                     return;
+                await database.StreamCreateConsumerGroupAsync(stream, consumerGroup, StreamPosition.NewMessages)
+                    .ConfigureAwait(false);
             }
             catch (Exception ex)
             {

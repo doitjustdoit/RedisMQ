@@ -1,10 +1,11 @@
+using LZH.RedisMQ;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebapiSample.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class WeatherForecastController : ControllerBase
+public class WeatherForecastController : ControllerBase,IRedisSubscribe
 {
     private static readonly string[] Summaries = new[]
     {
@@ -12,9 +13,11 @@ public class WeatherForecastController : ControllerBase
     };
 
     private readonly ILogger<WeatherForecastController> _logger;
+    private readonly IRedisPublisher _redisPublisher;
 
-    public WeatherForecastController(ILogger<WeatherForecastController> logger)
+    public WeatherForecastController(ILogger<WeatherForecastController> logger,IRedisPublisher redisPublisher)
     {
+        _redisPublisher = redisPublisher;
         _logger = logger;
     }
 
@@ -29,4 +32,24 @@ public class WeatherForecastController : ControllerBase
             })
             .ToArray();
     }
+
+    [HttpPost]
+    public IActionResult Publish([FromQuery]string msg="hello world")
+    {
+        _redisPublisher.PublishWithQueue("test",new TransDto());
+        return Ok();
+    }
+    [NonAction]
+    [RedisSubscribe("test")]
+    public void Test(TransDto msg,[FromRedis] RedisHeader headers)
+    {
+        Console.WriteLine($"received from {msg.Name} - {msg.Age}");
+    }
+    
+    public class  TransDto
+    {
+        public string Name { get; set; } = "lizhenghao";
+        public int Age { get; set; } = 27;
+    }
+    
 }

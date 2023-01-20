@@ -76,7 +76,7 @@ namespace LZH.RedisMQ.Internal
         {
             var executorDescriptorList = new List<ConsumerExecutorDescriptor>();
 
-            var capSubscribeTypeInfo = typeof(IRedisMQSubscribe).GetTypeInfo();
+            var capSubscribeTypeInfo = typeof(IRedisSubscribe).GetTypeInfo();
             var serviceCollection = provider.GetRequiredService<IServiceCollection>();
 
             foreach (var service in serviceCollection

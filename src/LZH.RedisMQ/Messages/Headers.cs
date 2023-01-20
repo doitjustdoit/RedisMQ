@@ -10,11 +10,11 @@ public static class Headers
     public const string Group = "msg-group";
     public const string SentTime = "sent-time";
     public const string Exception="failed-exception"; 
-    public const string CallbackName = "cap-callback-name";
+    public const string CallbackName = "callback-name";
     /// <summary>
     /// Message value .NET type
     /// </summary>
-    public const string Type = "redis-msg-type";
-    public const string DelayTime = "cap-delaytime";
-    public const string Retries = "cap-retries";
+    public const string Type = "msg-type";
+    public const string DelayTime = "delaytime";
+    public const string Retries = "retries";
 }

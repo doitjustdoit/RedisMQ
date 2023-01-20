@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using LZH.RedisMQ.Internal;
 using LZH.RedisMQ.Messages;
 using LZH.RedisMQ.Transport;
 
@@ -13,11 +14,11 @@ namespace LZH.RedisMQ;
 public abstract class RedisTransactionBase : IRedisTransaction
 {
     private readonly ConcurrentQueue<Message> _bufferList;
-    private readonly IDispatcher _dispatcher;
+    private readonly IMessageSender _messageSender;
 
-    protected RedisTransactionBase(IDispatcher dispatcher)
+    protected RedisTransactionBase(IMessageSender messageSender)
     {
-        _dispatcher = dispatcher;
+        _messageSender = messageSender;
         _bufferList = new ConcurrentQueue<Message>();
     }
 
@@ -44,17 +45,10 @@ public abstract class RedisTransactionBase : IRedisTransaction
     {
         while (!_bufferList.IsEmpty)
         {
+            // TODO 这里有可能会失败 目前通过重试+告警处理 重试次数固定 待优化
             if (_bufferList.TryDequeue(out var message))
             {
-                var isDelayMessage = message.Headers.ContainsKey(Headers.DelayTime);
-                if (isDelayMessage)
-                {
-                    _dispatcher.EnqueueToScheduler(message, DateTime.Parse(message.Headers[Headers.SentTime]!)).ConfigureAwait(false);
-                }
-                else
-                {
-                    _dispatcher.EnqueueToPublish(message).ConfigureAwait(false);
-                }
+                _messageSender.SendAsync(message);
             }
         }
     }

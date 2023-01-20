@@ -18,11 +18,13 @@ namespace LZH.RedisMQ.Internal
         private readonly IDispatcher _dispatcher;
         private readonly RedisMQOptions _redisMQOptions;
         private readonly ILogger<RedisMQPublisher> _logger;
+        private readonly IMessageSender _messageSender;
 
         public RedisMQPublisher(IServiceProvider service)
         {
             ServiceProvider = service;
             _dispatcher = service.GetRequiredService<IDispatcher>();
+            _messageSender = service.GetRequiredService<IMessageSender>();
             _logger= service.GetRequiredService<ILogger<RedisMQPublisher>>();
             _redisMQOptions = service.GetRequiredService<IOptions<RedisMQOptions>>().Value;
             Transaction = new AsyncLocal<IRedisTransaction>();
@@ -32,28 +34,28 @@ namespace LZH.RedisMQ.Internal
 
         public AsyncLocal<IRedisTransaction> Transaction { get; }
 
-        public Task PublishAsync<T>(string name, T? value, IDictionary<string, string?> headers, CancellationToken cancellationToken = default)
+        public Task PublishAsyncWithQueue<T>(string name, T? value, IDictionary<string, string?> headers, CancellationToken cancellationToken = default)
         {
-            return Task.Run(() => Publish(name, value, headers), cancellationToken);
+            return Task.Run(() => PublishWithQueue(name, value, headers), cancellationToken);
         }
 
-        public Task PublishAsync<T>(string name, T? value, string? callbackName = null,
+        public Task PublishAsyncWithQueue<T>(string name, T? value, string? callbackName = null,
             CancellationToken cancellationToken = default)
         {
-            return Task.Run(() => Publish(name, value, callbackName), cancellationToken);
+            return Task.Run(() => PublishWithQueue(name, value, callbackName), cancellationToken);
         }
 
-        public void Publish<T>(string name, T? value, string? callbackName = null)
+        public void PublishWithQueue<T>(string name, T? value, string? callbackName = null)
         {
             var header = new Dictionary<string, string?>
             {
                 {Headers.CallbackName, callbackName}
             };
 
-            Publish(name, value, header);
+            PublishWithQueue(name, value, header);
         }
 
-        public void Publish<T>(string name, T? value, IDictionary<string, string?> headers)
+        public void PublishWithQueue<T>(string name, T? value, IDictionary<string, string?> headers)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -71,7 +73,7 @@ namespace LZH.RedisMQ.Internal
                 headers.Add(Headers.MessageId, messageId);
             }
 
-         
+            headers.Add(Headers.MessageName, name);
             headers.Add(Headers.Type, typeof(T).Name);
             headers.Add(Headers.SentTime, DateTimeOffset.Now.ToString());
 
@@ -105,6 +107,68 @@ namespace LZH.RedisMQ.Internal
 
                 throw;
             }
+        }
+
+        public Task PublishAsync<T>(string name, T? value, IDictionary<string, string?> headers)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (!string.IsNullOrEmpty(_redisMQOptions.TopicNamePrefix))
+            {
+                name = $"{_redisMQOptions.TopicNamePrefix}.{name}";
+            }
+
+            if (!headers.ContainsKey(Headers.MessageId))
+            {
+                var messageId = SnowflakeId.Default().NextId().ToString();
+                headers.Add(Headers.MessageId, messageId);
+            }
+
+            headers.Add(Headers.MessageName, name);
+            headers.Add(Headers.Type, typeof(T).Name);
+            headers.Add(Headers.SentTime, DateTimeOffset.Now.ToString());
+
+            var message = new Message(headers, value);
+
+            long? tracingTimestamp = null;
+            try
+            {
+
+                if (Transaction.Value?.DbTransaction == null)
+                {
+                    return _messageSender.SendAsync(message);
+                }
+                else
+                {
+                    var transaction = (RedisTransactionBase)Transaction.Value;
+                    transaction.AddToSent(message);
+
+                    if (transaction.AutoCommit)
+                    {
+                        transaction.Commit();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                TracingError(tracingTimestamp, message, e);
+
+                throw;
+            }
+            return Task.CompletedTask;
+        }
+
+        public Task PublishAsync<T>(string name, T? value, string? callbackName = null)
+        {
+            var header = new Dictionary<string, string?>
+            {
+                {Headers.CallbackName, callbackName}
+            };
+        
+            return PublishAsync(name, value, header);
         }
 
         #region tracing

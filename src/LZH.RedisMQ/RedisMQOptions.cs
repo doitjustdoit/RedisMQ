@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.Text.Json;
 using LZH.RedisMQ.Messages;
 using StackExchange.Redis;
@@ -7,7 +8,12 @@ namespace LZH.RedisMQ
 {
     public class RedisMQOptions
     {
-        public JsonSerializerOptions JsonSerializerOptions { get; set; }
+
+        public RedisMQOptions()
+        {
+            DefaultGroupName = "redis.queue." + Assembly.GetEntryAssembly()?.GetName().Name.ToLower();
+        }
+        public JsonSerializerOptions JsonSerializerOptions { get; set; } = new();
         
         /// <summary>
         ///     Gets or sets the native options of StackExchange.Redis
@@ -24,7 +30,7 @@ namespace LZH.RedisMQ
         /// <summary>
         ///     Gets or sets the number of connections that can be used with redis server
         /// </summary>
-        public uint ConnectionPoolSize { get; set; } = 10;
+        public uint ConnectionPoolSize { get; set; } = 50;
 
         public string? TopicNamePrefix { get; set; }
         public int ConsumerThreadCount { get; set; } = 1;
@@ -35,8 +41,10 @@ namespace LZH.RedisMQ
         public string DefaultGroupName { get; set; }
         public string Version { get; set; } = "v1";
         public bool UseDispatchingPerGroup { get; set; } = false;
+        // 是否开启提前拉取模式 开启后根据ConsumerThreadCount*300的数量拉取消息消费
         public bool EnableConsumerPrefetch { get; set; } = true;
-        public int ProducerThreadCount { get; set; }
+        // 多少个线程用于发送消息
+        public int ProducerThreadCount { get; set; } = 1;
         public double FailedRetryInterval { get; set; } = 2;
     }
 }

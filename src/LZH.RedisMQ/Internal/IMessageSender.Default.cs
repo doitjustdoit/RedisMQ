@@ -85,7 +85,7 @@ namespace LZH.RedisMQ.Internal
         private bool UpdateMessageForRetry(Message message)
         {
             var retries = message.AddRetry();
-            // 发送超过3次失败直接放弃
+            // 这里固定值  发送超过3次失败直接放弃 待优化？
             var retryCount = 3;
             if (retries >= retryCount)
             {
