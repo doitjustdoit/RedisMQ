@@ -1,4 +1,4 @@
-using LZH.RedisMQ;
+using RedisMQ;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);

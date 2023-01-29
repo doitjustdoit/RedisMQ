@@ -1,4 +1,4 @@
-using LZH.RedisMQ.Serialization;
+using RedisMQ.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace RedisMQ.Test

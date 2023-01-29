@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
-using LZH.RedisMQ;
-using LZH.RedisMQ.Internal;
-using LZH.RedisMQ.Messages;
-using LZH.RedisMQ.Serialization;
+using RedisMQ;
+using RedisMQ.Internal;
+using RedisMQ.Messages;
+using RedisMQ.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace RedisMQ.Test

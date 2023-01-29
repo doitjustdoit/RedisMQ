@@ -11,7 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\LZH.RedisMQ\LZH.RedisMQ.csproj" />
+      <ProjectReference Include="..\..\src\RedisMQ\RedisMQ.csproj" />
     </ItemGroup>
 
 </Project>

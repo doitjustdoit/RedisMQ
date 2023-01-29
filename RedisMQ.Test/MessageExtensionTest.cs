@@ -1,4 +1,4 @@
-﻿using LZH.RedisMQ.Messages;
+﻿using RedisMQ.Messages;
 
 namespace RedisMQ.Test
 {

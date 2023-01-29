@@ -1,4 +1,4 @@
-﻿using LZH.RedisMQ.Internal;
+﻿using RedisMQ.Internal;
 
 namespace RedisMQ.Test
 {
