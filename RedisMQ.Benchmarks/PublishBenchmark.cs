@@ -1,142 +1,115 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Loggers;
-using BenchmarkDotNet.Running;
-using RedisMQ.Transport;
 using Microsoft.Extensions.DependencyInjection;
+using RedisMQ;
+using RedisMQ.Benchmarks;
 using RedisMQ.Messages;
 using RedisMQ.RedisStream;
 using RedisMQ.Serialization;
+using RedisMQ.Serialization.MessagePack;
+using RedisMQ.Transport;
 using StackExchange.Redis;
-using Xunit.Abstractions;
 
-namespace RedisMQ.Benchmarks;
-
-
-// should use command : dotnet test --logger "console;verbosity=detailed" -c Release
-
-public class PublishBenchmark
+[MemoryDiagnoser]
+public class TestBenchmarks
 {
-    private readonly ITestOutputHelper output;
+    private ServiceProvider _provider;
+    private IRedisPublisher _publisher;
+    private IDispatcher _dispacher;
+    private ISerializer _serializer;
+    private string _rawData;
+    private static ConnectionMultiplexer _redisClient = ConnectionMultiplexer.Connect("localhost:6379");
 
-    public PublishBenchmark(ITestOutputHelper output)
+    private static ConnectionMultiplexer[] _connections = new ConnectionMultiplexer[5]
     {
-        this.output = output;
-        var converter = new ConsoleConverter(output);
-        Console.SetOut(converter);
+        ConnectionMultiplexer.Connect("localhost:6379"), ConnectionMultiplexer.Connect("localhost:6379"),
+        ConnectionMultiplexer.Connect("localhost:6379"), ConnectionMultiplexer.Connect("localhost:6379"),
+        ConnectionMultiplexer.Connect("localhost:6379")
+    };
+
+    private ServiceCollection _services;
+    private ServiceProvider _providerWithMsgPack;
+    private IRedisPublisher _publisherWithMsgPack;
+
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _services = new ServiceCollection();
+        _services.AddRedisMQ(action =>
+        {
+            action.Configuration = ConfigurationOptions.Parse("localhost:6379");
+        });
+        _services.AddLogging();
+        _provider = _services.BuildServiceProvider();
+        _publisher = _provider.GetRequiredService<IRedisPublisher>();
+        _dispacher = _provider.GetRequiredService<IDispatcher>();
+        _serializer = _provider.GetRequiredService<ISerializer>();
+        _rawData = _serializer.Serialize(new Message(new Dictionary<string, string?>(), new TestTransDto()));
+
+        _services.WithMessagePack();
+        _providerWithMsgPack=_services.BuildServiceProvider();
+        _publisherWithMsgPack= _providerWithMsgPack.GetRequiredService<IRedisPublisher>();
     }
+    [Benchmark]
+    public void Publish_10000()
+    {
+        List<Task> tasks = new();
+        for (int i = 0; i < 10000; i++)
+        {
+            tasks.Add(_publisher.PublishAsync("test2", new TestTransDto()));
+        }
+
+        Task.WaitAll(tasks.ToArray());
+    }
+    [Benchmark]
+    public void Publish_10000_MessagePack()
+    {
+        List<Task> tasks = new();
+        for (int i = 0; i < 10000; i++)
+        {
+            tasks.Add(_publisherWithMsgPack.PublishAsync("test_msgpack", new TestTransDto()));
+        }
+
+        Task.WaitAll(tasks.ToArray());
+    }
+    [Benchmark]
+    public void Publish_WithoutSerialization_10000()
+    {
+        IRedisStreamManager redisStreamManager = _provider.GetRequiredService<IRedisStreamManager>();
+        NameValueEntry[] valueEntry = new NameValueEntry[1] { new NameValueEntry("body", _rawData) };
+
+        List<Task> tasks = new();
+        for (int i = 0; i < 10000; i++)
+        {
+            redisStreamManager.PublishAsync("test2", valueEntry);
+        }
+
+        Task.WaitAll(tasks.ToArray());
+    }
+
+    [Benchmark]
+    public void StreamAdd_10000()
+    {
+        List<Task> t = new();
+        for (int i = 0; i < 10000; i++)
+        {
+            t.Add(_redisClient.GetDatabase().StreamAddAsync("test_stream", "foo_name", "bar_value"));
+        }
     
-    [Fact]
-    public void BenchmarkTest()
-    {
-        var logger = new AccumulationLogger();
-        
-
-        var config = ManualConfig.Create(DefaultConfig.Instance)
-            .AddLogger(logger)
-            .WithOptions(ConfigOptions.Default);
-
-        BenchmarkRunner.Run<PublishBenchmarks>(config);
-
-        output.WriteLine(logger.GetLog());
+        Task.WaitAll(t.ToArray());
     }
-
-    [MemoryDiagnoser]
-    public class PublishBenchmarks
+    [Benchmark]
+    public void StreamAdd_50000_5Con()
     {
-        private ServiceProvider _provider;
-        private IRedisPublisher _publisher;
-        private IDispatcher _dispacher;
-        private ISerializer _serializer;
-        private string _rawData;
-
-        [GlobalSetup]
-        public void Setup()
+        var res=Parallel.ForEach(_connections, (connection) =>
         {
-            var services = new ServiceCollection();
-            services.AddRedisMQ(action =>
-            {
-                action.Configuration = ConfigurationOptions.Parse("localhost:55000,password=redispw");
-            });
-            services.AddLogging();
-            _provider = services.BuildServiceProvider();
-            _publisher = _provider.GetRequiredService<IRedisPublisher>();
-            _dispacher = _provider.GetRequiredService<IDispatcher>();
-            _serializer = _provider.GetRequiredService<ISerializer>();
-            _rawData=_serializer.Serialize(new Message(new Dictionary<string, string?>(),new TestTransDto()));
-        }
-
-        [Benchmark]
-        public void Publish_1000()
-        {
-            List<Task> tasks = new();
-            for (int i = 0; i < 1000; i++)
-            {
-                tasks.Add(_publisher.PublishAsync("test2", new TestTransDto()));
-            }
-
-            Task.WaitAll(tasks.ToArray());
-        }
-        [Benchmark]
-        public void Publish_10000()
-        {
-            List<Task> tasks = new();
+            List<Task> t = new();
             for (int i = 0; i < 10000; i++)
             {
-                tasks.Add(_publisher.PublishAsync("test2", new TestTransDto()));
+                t.Add(connection.GetDatabase().StreamAddAsync("test_stream", "foo_name", "bar_value"));
             }
 
-            Task.WaitAll(tasks.ToArray());
-        }
-        [Benchmark]
-        public void Publish_WithoutSerialization_1000()
-        {
-            IRedisStreamManager redisStreamManager = _provider.GetRequiredService<IRedisStreamManager>();
-            NameValueEntry[] valueEntry = new NameValueEntry[1] { new NameValueEntry("body", _rawData) };
-
-            List<Task> tasks = new();
-            for (int i = 0; i < 1000; i++)
-            {
-                redisStreamManager.PublishAsync("test2", valueEntry);
-            }
-
-            Task.WaitAll(tasks.ToArray());
-        }
-        [Benchmark]
-        public void Publish_WithoutSerialization_10000()
-        {
-            IRedisStreamManager redisStreamManager = _provider.GetRequiredService<IRedisStreamManager>();
-            NameValueEntry[] valueEntry = new NameValueEntry[1] { new NameValueEntry("body", _rawData) };
-
-            List<Task> tasks = new();
-            for (int i = 0; i < 10000; i++)
-            {
-                redisStreamManager.PublishAsync("test2", valueEntry);
-            }
-
-            Task.WaitAll(tasks.ToArray());
-        }
-        [Benchmark]
-        public void Publish_WithQueue_1000()
-        {
-            for (int i = 0; i < 1000; i++)
-            {
-                _publisher.PublishAsync("test2", new TestTransDto());
-            }
-
-            while (_dispacher.GetUnPublishedMessagesCount() > 0)
-                ;
-        }
-        [Benchmark]
-        public void Publish_WithQueue_10000()
-        {
-            for (int i = 0; i < 10000; i++)
-            {
-                _publisher.PublishAsync("test2", new TestTransDto());
-            }
-
-            while (_dispacher.GetUnPublishedMessagesCount() > 0)
-                ;
-        }
+            Task.WaitAll(t.ToArray());
+        });
     }
 }

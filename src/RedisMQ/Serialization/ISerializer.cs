@@ -22,7 +22,7 @@ namespace RedisMQ.Serialization
         /// <summary>
         /// Deserialize the given string into a <see cref="Message"/>
         /// </summary>
-        Message? Deserialize(string json);
+        Message? Deserialize(string sourceBytesBase64);
 
         /// <summary>
         /// Deserialize the given <see cref="TransportMessage"/> back into a <see cref="Message"/>

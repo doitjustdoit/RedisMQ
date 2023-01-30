@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +14,7 @@ namespace RedisMQ.RedisStream
 {
     internal class RedisConnectionPool : IRedisConnectionPool, IDisposable
     {
-        private readonly ConcurrentBag<AsyncLazyRedisConnection> _connections = new();
+        private readonly Queue<RedisConnection> _connections = new();
 
         private readonly ILoggerFactory _loggerFactory;
         private readonly SemaphoreSlim _poolLock = new(1);
@@ -29,14 +29,9 @@ namespace RedisMQ.RedisStream
             Init().GetAwaiter().GetResult();
         }
 
-        private AsyncLazyRedisConnection? QuietConnection
-        {
-            get
-            {
-                return _poolAlreadyConfigured ? _connections.OrderBy(async c => (await c).ConnectionCapacity).First() : null;
-            }
-        }
-
+        private RedisConnection? QuietConnection
+              =>   _poolAlreadyConfigured ? _connections.MinBy( c =>c.ConnectionCapacity) : null;
+            
         public void Dispose()
         {
             Dispose(true);
@@ -47,22 +42,19 @@ namespace RedisMQ.RedisStream
         {
             if (QuietConnection == null)
             {
-                _poolAlreadyConfigured = _connections.Count(c => c.IsValueCreated) == _redisOptions.ConnectionPoolSize;
+                _poolAlreadyConfigured = _connections.Count == _redisOptions.ConnectionPoolSize;
                 if (QuietConnection != null)
-                    return (await QuietConnection).Connection;
+                    return QuietConnection.Connection;
             }
+            return _connections.MinBy(it=>it.ConnectionCapacity)!.Connection;
+        }
 
-            foreach (var lazy in _connections)
+        public void RefreshConnectionCapacity()
+        {
+            foreach (var redisConnection in _connections)
             {
-                if (!lazy.IsValueCreated)
-                    return (await lazy).Connection;
-
-                var connection = await lazy;
-                if (connection.ConnectionCapacity == default)
-                    return connection.Connection;
+                redisConnection.RefreshConnectionCapacity();
             }
-
-            return (await _connections.OrderBy(async c => (await c).ConnectionCapacity).First()).Connection;
         }
 
         private async Task Init()
@@ -76,10 +68,10 @@ namespace RedisMQ.RedisStream
 
                 for (var i = 0; i < _redisOptions.ConnectionPoolSize; i++)
                 {
-                    var connection = new AsyncLazyRedisConnection(_redisOptions,
+                    var connection =await AsyncLazyRedisConnection.ConnectAsync(_redisOptions,
                         _loggerFactory.CreateLogger<AsyncLazyRedisConnection>());
 
-                    _connections.Add(connection);
+                    _connections.Enqueue(connection);
                 }
             }
             finally
@@ -96,10 +88,7 @@ namespace RedisMQ.RedisStream
             if (disposing)
                 foreach (var connection in _connections)
                 {
-                    if (!connection.IsValueCreated)
-                        continue;
-
-                    connection.GetAwaiter().GetResult().Dispose();
+                    connection.Dispose();
                 }
 
             _isDisposed = true;

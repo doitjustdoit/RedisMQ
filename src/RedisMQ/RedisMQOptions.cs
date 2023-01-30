@@ -30,7 +30,7 @@ namespace RedisMQ
         /// <summary>
         ///     Gets or sets the number of connections that can be used with redis server
         /// </summary>
-        public uint ConnectionPoolSize { get; set; } = 50;
+        public uint ConnectionPoolSize { get; set; } = 10;
 
         public string? TopicNamePrefix { get; set; }
         public int ConsumerThreadCount { get; set; } = 1;

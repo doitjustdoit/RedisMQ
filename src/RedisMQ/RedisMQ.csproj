@@ -3,11 +3,11 @@
     <PropertyGroup>
         <Nullable>enable</Nullable>
         <LangVersion>default</LangVersion>
-        <TargetFrameworks>net6.0;netstandard2.1</TargetFrameworks>
         <AssemblyName>RedisMQ</AssemblyName>
         <RootNamespace>RedisMQ</RootNamespace>
         <Title>RedisMQ</Title>
         <Authors>lizhenghao</Authors>
+        <TargetFramework>net6.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>

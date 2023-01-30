@@ -51,9 +51,9 @@ namespace RedisMQ.Serialization
             return JsonSerializer.Serialize(message, _jsonSerializerOptions);
         }
 
-        public Message? Deserialize(string json)
+        public Message? Deserialize(string sourceBytesBase64)
         {
-            return JsonSerializer.Deserialize<Message>(json, _jsonSerializerOptions);
+            return JsonSerializer.Deserialize<Message>(sourceBytesBase64, _jsonSerializerOptions);
         }
 
         public object? Deserialize(object value, Type valueType)

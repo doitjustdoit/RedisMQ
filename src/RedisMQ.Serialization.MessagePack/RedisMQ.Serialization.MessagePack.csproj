@@ -8,4 +8,12 @@
         <Authors>lizhenghao</Authors>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="MessagePack" Version="2.4.59" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\RedisMQ\RedisMQ.csproj" />
+    </ItemGroup>
+
 </Project>

@@ -17,9 +17,7 @@ namespace RedisMQ.Messages
             Headers = headers ?? throw new ArgumentNullException(nameof(headers));
             Value = value;
         }
-        
         public IDictionary<string,string?> Headers { get; set; }
-        
         public object? Value { get; set; }
 
        

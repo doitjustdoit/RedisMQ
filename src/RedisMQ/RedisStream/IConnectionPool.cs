@@ -9,5 +9,7 @@ namespace RedisMQ.RedisStream
     internal interface IRedisConnectionPool
     {
         Task<IConnectionMultiplexer> ConnectAsync();
+
+        void RefreshConnectionCapacity();
     }
 }

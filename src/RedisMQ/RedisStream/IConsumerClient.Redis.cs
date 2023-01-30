@@ -53,7 +53,6 @@ namespace RedisMQ.RedisStream
         public void Listening(TimeSpan timeout, CancellationToken cancellationToken)
         {
             _ = ListeningForMessagesAsync(timeout, cancellationToken);
-
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();

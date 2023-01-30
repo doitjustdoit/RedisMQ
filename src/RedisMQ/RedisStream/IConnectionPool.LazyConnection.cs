@@ -21,7 +21,7 @@ namespace RedisMQ.RedisStream
             return Value.GetAwaiter();
         }
 
-        private static async Task<RedisConnection> ConnectAsync(RedisMQOptions redisOptions,
+        public static async Task<RedisConnection> ConnectAsync(RedisMQOptions redisOptions,
             ILogger<AsyncLazyRedisConnection> logger)
         {
             int attemp = 1;
@@ -48,6 +48,9 @@ namespace RedisMQ.RedisStream
 
             return new RedisConnection(connection);
         }
+
+
+     
     }
 
     public class RedisConnection : IDisposable
@@ -60,14 +63,17 @@ namespace RedisMQ.RedisStream
         }
 
         public IConnectionMultiplexer Connection { get; }
-        public long ConnectionCapacity => Connection.GetCounters().TotalOutstanding;
+        public long ConnectionCapacity { get; private set; } //Connection.GetCounters().TotalOutstanding;
 
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
+        public void RefreshConnectionCapacity()
+        {
+            ConnectionCapacity=Connection.GetCounters().TotalOutstanding;
+        }
         private void Dispose(bool disposing)
         {
             if (_isDisposed)
@@ -77,5 +83,8 @@ namespace RedisMQ.RedisStream
 
             _isDisposed = true;
         }
+
+
+       
     }
 }

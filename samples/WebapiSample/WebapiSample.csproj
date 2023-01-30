@@ -11,6 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\RedisMQ.Serialization.MessagePack\RedisMQ.Serialization.MessagePack.csproj" />
       <ProjectReference Include="..\..\src\RedisMQ\RedisMQ.csproj" />
     </ItemGroup>
 
