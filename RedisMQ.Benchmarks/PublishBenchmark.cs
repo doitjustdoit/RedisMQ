@@ -46,7 +46,14 @@ public class TestBenchmarks
         _serializer = _provider.GetRequiredService<ISerializer>();
         _rawData = _serializer.Serialize(new Message(new Dictionary<string, string?>(), new TestTransDto()));
 
-        _services.WithMessagePack();
+        
+        var _services2 = new ServiceCollection();
+        _services2.AddRedisMQ(action =>
+        {
+            action.Configuration = ConfigurationOptions.Parse("localhost:6379");
+            action.UseMessagePack();
+        });
+        _services2.AddLogging();
         _providerWithMsgPack=_services.BuildServiceProvider();
         _publisherWithMsgPack= _providerWithMsgPack.GetRequiredService<IRedisPublisher>();
     }

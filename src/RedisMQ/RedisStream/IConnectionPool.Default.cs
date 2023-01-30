@@ -68,8 +68,8 @@ namespace RedisMQ.RedisStream
 
                 for (var i = 0; i < _redisOptions.ConnectionPoolSize; i++)
                 {
-                    var connection =await AsyncLazyRedisConnection.ConnectAsync(_redisOptions,
-                        _loggerFactory.CreateLogger<AsyncLazyRedisConnection>());
+                    var connection =await RedisConnection.ConnectAsync(_redisOptions,
+                        _loggerFactory.CreateLogger<RedisConnection>());
 
                     _connections.Enqueue(connection);
                 }

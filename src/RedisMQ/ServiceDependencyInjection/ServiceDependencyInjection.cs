@@ -49,6 +49,10 @@ public static class ServiceDependencyInjection
         var options = new RedisMQOptions();
         setupAction(options);
         services.Configure(setupAction);
+        foreach (var redisMqOptionsExtension in options.Extensions)
+        {
+            redisMqOptionsExtension.AddServices(services);
+        }
 
         //Executors
         if (options.UseDispatchingPerGroup)

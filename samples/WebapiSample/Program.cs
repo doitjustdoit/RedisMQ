@@ -12,11 +12,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddRedisMQ(mqOptions =>
 {
-    mqOptions.Configuration =   ConfigurationOptions.Parse("localhost:6379");
-    // use messagepack rather than default json
-    // mqOptions.UseMessagePack(builder.Services);
+    mqOptions.Configuration = ConfigurationOptions.Parse("localhost:6379");
+    mqOptions.UseMessagePack();
+});
 
-}).WithMessagePack();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

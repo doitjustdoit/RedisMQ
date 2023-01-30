@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json;
 using RedisMQ.Messages;
@@ -46,5 +47,11 @@ namespace RedisMQ
         // 多少个线程用于发送消息
         public int ProducerThreadCount { get; set; } = 1;
         public double FailedRetryInterval { get; set; } = 2;
+
+        /// <summary>
+        /// Gets the extensions.
+        /// </summary>
+        /// <value>The extensions.</value>
+        public IList<IRedisMQOptionsExtension> Extensions { get; } = new List<IRedisMQOptionsExtension>();
     }
 }

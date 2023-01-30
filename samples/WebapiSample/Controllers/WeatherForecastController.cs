@@ -25,7 +25,7 @@ public class WeatherForecastController : ControllerBase,IRedisSubscribe
     [HttpPost]
     public IActionResult Publish([FromQuery]string msg="hello world")
     {
-        _redisPublisher.PublishWithQueue("test",new TransDto());
+        _redisPublisher.PublishAsync("test",new TransDto());
         return Ok();
     }
     [NonAction]
