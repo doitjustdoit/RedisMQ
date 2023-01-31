@@ -6,6 +6,14 @@
         <Nullable>enable</Nullable>
         <Title>RedisMQ.Serialization.MessagePack</Title>
         <Authors>lizhenghao</Authors>
+        <PackageVersion>0.1.0</PackageVersion>
+        <PackageProjectUrl>https://github.com/li-zheng-hao/RedisMQ</PackageProjectUrl>
+        <PackageIcon>icon.png</PackageIcon>
+        <RepositoryUrl>https://github.com/li-zheng-hao/RedisMQ</RepositoryUrl>
+        <Description>一个基于Redis Stream的轻量级高性能消息队列</Description>
+        <Copyright>lizhenghao</Copyright>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageLicenseUrl>https://github.com/git/git-scm.com/blob/main/MIT-LICENSE.txt</PackageLicenseUrl>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,6 +22,14 @@
 
     <ItemGroup>
       <ProjectReference Include="..\RedisMQ\RedisMQ.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="..\..\icon.png">
+        <Pack>True</Pack>
+        <PackagePath></PackagePath>
+        <Link>icon.png</Link>
+      </None>
     </ItemGroup>
 
 </Project>

@@ -8,6 +8,14 @@
         <Title>RedisMQ</Title>
         <Authors>lizhenghao</Authors>
         <TargetFramework>net6.0</TargetFramework>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageVersion>0.1.0</PackageVersion>
+        <Description>一个基于Redis Stream的轻量级高性能消息队列</Description>
+        <Copyright>lizhenghao</Copyright>
+        <PackageProjectUrl>https://github.com/li-zheng-hao/RedisMQ</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/git/git-scm.com/blob/main/MIT-LICENSE.txt</PackageLicenseUrl>
+        <PackageIcon>icon.png</PackageIcon>
+        <RepositoryUrl>https://github.com/li-zheng-hao/RedisMQ</RepositoryUrl>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,6 +24,14 @@
       <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" />
       <PackageReference Include="StackExchange.Redis" Version="2.6.90" />
       <PackageReference Include="System.Text.Json" Version="7.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="..\..\icon.png">
+        <Pack>True</Pack>
+        <PackagePath></PackagePath>
+        <Link>icon.png</Link>
+      </None>
     </ItemGroup>
 
 </Project>

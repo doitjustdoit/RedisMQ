@@ -1,4 +1,6 @@
+using System.Data.Common;
 using BenchmarkDotNet.Attributes;
+using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
 using RedisMQ;
 using RedisMQ.Benchmarks;
@@ -17,13 +19,13 @@ public class TestBenchmarks
     private IDispatcher _dispacher;
     private ISerializer _serializer;
     private string _rawData;
-    private static ConnectionMultiplexer _redisClient = ConnectionMultiplexer.Connect("localhost:6379");
-
+    private const string ConnectionString="localhost:55004,password=redispw";
+    private static ConnectionMultiplexer _redisClient = ConnectionMultiplexer.Connect(ConnectionString);
     private static ConnectionMultiplexer[] _connections = new ConnectionMultiplexer[5]
     {
-        ConnectionMultiplexer.Connect("localhost:6379"), ConnectionMultiplexer.Connect("localhost:6379"),
-        ConnectionMultiplexer.Connect("localhost:6379"), ConnectionMultiplexer.Connect("localhost:6379"),
-        ConnectionMultiplexer.Connect("localhost:6379")
+        ConnectionMultiplexer.Connect(ConnectionString), ConnectionMultiplexer.Connect(ConnectionString),
+        ConnectionMultiplexer.Connect(ConnectionString), ConnectionMultiplexer.Connect(ConnectionString),
+        ConnectionMultiplexer.Connect(ConnectionString)
     };
 
     private ServiceCollection _services;
@@ -38,7 +40,7 @@ public class TestBenchmarks
         _services = new ServiceCollection();
         _services.AddRedisMQ(action =>
         {
-            action.Configuration = ConfigurationOptions.Parse("localhost:6379");
+            action.Configuration = ConfigurationOptions.Parse(ConnectionString);
         });
         _services.AddLogging();
         _provider = _services.BuildServiceProvider();
@@ -51,9 +53,10 @@ public class TestBenchmarks
         var _services2 = new ServiceCollection();
         _services2.AddRedisMQ(action =>
         {
-            action.Configuration = ConfigurationOptions.Parse("localhost:6379");
+            action.Configuration = ConfigurationOptions.Parse(ConnectionString);
             action.UseMessagePack();
         });
+        MessagePackSerializer.DefaultOptions = MessagePack.Resolvers.ContractlessStandardResolver.Options;
         _services2.AddLogging();
         _providerWithMsgPack=_services2.BuildServiceProvider();
         _publisherWithMsgPack= _providerWithMsgPack.GetRequiredService<IRedisPublisher>();
@@ -81,10 +84,10 @@ public class TestBenchmarks
     //     var _=_serializerMsgPack.Serialize( msg);
     // }
     [Benchmark()]
-    public void Publish_1000()
+    public void Publish_1000_Json()
     {
         List<Task> tasks = new();
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 10000; i++)
         {
             tasks.Add(_publisher.PublishAsync("test2", new TestTransDto()));
         }
@@ -96,7 +99,7 @@ public class TestBenchmarks
     public void Publish_1000_MessagePack()
     {
         List<Task> tasks = new();
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 10000; i++)
         {
             tasks.Add(_publisherWithMsgPack.PublishAsync("test_msgpack", new TestTransDto()));
         }
@@ -104,38 +107,38 @@ public class TestBenchmarks
         Task.WaitAll(tasks.ToArray());
     }
     // [Benchmark]
-    public void Publish_WithoutSerialization_1000()
-    {
-        IRedisStreamManager redisStreamManager = _provider.GetRequiredService<IRedisStreamManager>();
-        NameValueEntry[] valueEntry = new NameValueEntry[1] { new NameValueEntry("body", _rawData) };
+    // public void Publish_WithoutSerialization_1000()
+    // {
+    //     IRedisStreamManager redisStreamManager = _provider.GetRequiredService<IRedisStreamManager>();
+    //     NameValueEntry[] valueEntry = new NameValueEntry[1] { new NameValueEntry("body", _rawData) };
+    //
+    //     List<Task> tasks = new();
+    //     for (int i = 0; i < 1000; i++)
+    //     {
+    //         redisStreamManager.PublishAsync("test2", valueEntry);
+    //     }
+    //
+    //     Task.WaitAll(tasks.ToArray());
+    // }
     
-        List<Task> tasks = new();
-        for (int i = 0; i < 1000; i++)
-        {
-            redisStreamManager.PublishAsync("test2", valueEntry);
-        }
-    
-        Task.WaitAll(tasks.ToArray());
-    }
-    
-    [Benchmark(Baseline = true)]
-    public void StreamAdd_1000()
-    {
-        
-        List<Task> t = new();
-        for (int i = 0; i < 1000; i++)
-        {
-            t.Add(_redisClient.GetDatabase().StreamAddAsync("test_stream", "foo_name", "bar_value"));
-        }
-    
-        Task.WaitAll(t.ToArray());
-    }
+    // [Benchmark()]
+    // public void StreamAdd_1000()
+    // {
+    //     
+    //     List<Task> t = new();
+    //     for (int i = 0; i < 1000; i++)
+    //     {
+    //         t.Add(_redisClient.GetDatabase().StreamAddAsync("test_stream", "foo_name", "bar_value"));
+    //     }
+    //
+    //     Task.WaitAll(t.ToArray());
+    // }
     [Benchmark]
     public void StreamAdd_1000_Json()
     {
         List<Task> t = new();
        
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 10000; i++)
         {
             var msg=new Message();
             msg.Headers.Add("test","test");
@@ -148,23 +151,23 @@ public class TestBenchmarks
     
         Task.WaitAll(t.ToArray());
     }
-    [Benchmark]
-    public void StreamAdd_1000_MsgPack()
-    {
-        List<Task> t = new();
-       
-        for (int i = 0; i < 1000; i++)
-        {
-            var msg=new Message();
-            msg.Headers.Add("test","test");
-            msg.Headers.Add("test2","test2");
-            msg.Headers.Add("test3","test3");
-            msg.Value = new TestTransDto();
-            var json=_serializerMsgPack.Serialize( msg);
-            t.Add(_redisClient.GetDatabase().StreamAddAsync("test_stream", "foo_name", json));
-        }
-    
-        Task.WaitAll(t.ToArray());
-    }
+    // [Benchmark]
+    // public void StreamAdd_1000_MsgPack()
+    // {
+    //     List<Task> t = new();
+    //    
+    //     for (int i = 0; i < 1000; i++)
+    //     {
+    //         var msg=new Message();
+    //         msg.Headers.Add("test","test");
+    //         msg.Headers.Add("test2","test2");
+    //         msg.Headers.Add("test3","test3");
+    //         msg.Value = new TestTransDto();
+    //         var json=_serializerMsgPack.Serialize( msg);
+    //         t.Add(_redisClient.GetDatabase().StreamAddAsync("test_stream", "foo_name", json));
+    //     }
+    //
+    //     Task.WaitAll(t.ToArray());
+    // }
    
 }

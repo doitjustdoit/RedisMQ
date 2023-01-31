@@ -12,6 +12,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddRedisMQ(mqOptions =>
 {
     mqOptions.Configuration = ConfigurationOptions.Parse("localhost:6379");
+    mqOptions.FailedRetryCount = 3;
+    mqOptions.FailedThresholdCallback += message =>
+    {
+        // 短信 日志 邮件通知。。。
+        var topic = message.GetName();
+        var group = message.GetGroup();
+        var msgId = message.GetId();
+        var payload = message.Body;
+    };
     // mqOptions.UseMessagePack();
 });
 
