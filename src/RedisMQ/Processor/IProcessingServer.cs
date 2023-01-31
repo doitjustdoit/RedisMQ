@@ -91,6 +91,7 @@ public class RedisProcessingServer : IProcessingServer
             _provider.GetRequiredService<TransportCheckProcessor>(),
             // _provider.GetRequiredService<MessageNeedToRetryProcessor>(),
             _provider.GetRequiredService<RefreshConnectionCapacityCheckProcessor>(),
+            _provider.GetRequiredService<PendingMessageRetryProcessor>(),
         };
 
         return returnedProcessors.ToArray();

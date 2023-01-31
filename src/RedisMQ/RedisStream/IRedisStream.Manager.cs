@@ -25,8 +25,15 @@ namespace RedisMQ.RedisStream
         Task<Dictionary<string, StreamEntry?>> PollStreamsPendingMessagesAsync(string[] topics, string groupId,
             StreamPosition[] positions, StreamPendingMessageInfo[] streamPendingMessageInfos,
             CancellationToken cancellationToken);
+
+        /// <returns>返回值topic,group name,stream message id</returns>
+        Task<List<string>> PollStreamsFailedMessagesIdAsync(string topic, string groupId,
+            CancellationToken cancellationToken);
         
+        Task<StreamEntry> PollStreamsCertainMessageAsync(string topic, string groupId,string messageId,
+            CancellationToken cancellationToken);
         Task<bool> TryLockMessageAsync(string topic, string groupName, string messageId, TimeSpan lockTime);
         Task<bool> PublishAsync(Message message);
+        Task TransferFailedMessageToDeadLetterAsync(TransportMessage msg, string messageId);
     }
 }

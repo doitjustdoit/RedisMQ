@@ -33,6 +33,7 @@ public class WeatherForecastController : ControllerBase,IRedisSubscribe
     public void Test(TransDto msg,[FromRedis] RedisHeader headers)
     {
         _logger.LogInformation($"received from {msg.Name} - {msg.Age}");
+        throw new Exception("test");
     }
     
     public class  TransDto

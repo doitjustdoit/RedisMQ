@@ -162,7 +162,7 @@ namespace RedisMQ.Internal
         protected virtual void SetSubscribeAttribute(TopicAttribute attribute)
         {
             var prefix = !string.IsNullOrEmpty(_redisMQOptions.GroupNamePrefix)
-                ? $"{_redisMQOptions.GroupNamePrefix}."
+                ? $"{_redisMQOptions.GroupNamePrefix}:"
                 : string.Empty;
             attribute.Group = $"{prefix}{attribute.Group ?? _redisMQOptions.DefaultGroupName}.{_redisMQOptions.Version}";
         }

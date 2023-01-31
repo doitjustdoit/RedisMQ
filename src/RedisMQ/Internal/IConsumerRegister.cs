@@ -11,5 +11,7 @@ namespace RedisMQ.Internal
         bool IsHealthy();
 
         void ReStart(bool force = false);
+        
+        
     }
 }

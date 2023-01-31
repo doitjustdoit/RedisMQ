@@ -18,7 +18,7 @@ namespace RedisMQ.RedisStream
         private readonly ILogger<RedisStreamManager> _logger;
         private readonly RedisMQOptions _options;
         private IConnectionMultiplexer? _redis;
-
+        private const string DeadLetterTopicName="redismq:topic:DeadLetter"; 
         public RedisStreamManager(IRedisConnectionPool connectionsPool, IOptions<RedisMQOptions> options,
             ILogger<RedisStreamManager> logger)
         {
@@ -111,6 +111,29 @@ namespace RedisMQ.RedisStream
             return res;
         }
 
+        public async Task<List<string>> PollStreamsFailedMessagesIdAsync(string topic, string groupId,
+            CancellationToken cancellationToken)
+        {
+            await ConnectAsync()
+                .ConfigureAwait(false);
+            var db=_redis.GetDatabase();
+            List<string> res = new();
+            var msgInfos = await db.StreamPendingMessagesAsync(topic,groupId,1000,groupId,StreamPosition.Beginning);
+            var ids= msgInfos.AsQueryable().Where(it => it.DeliveryCount > _options.FailedRetryCount).Select(it=>it.MessageId.ToString()).ToList();
+            return ids;
+        }
+
+        public async Task<StreamEntry> PollStreamsCertainMessageAsync(string topic, string groupId, string messageId,
+            CancellationToken cancellationToken)
+        {
+            await ConnectAsync()
+                .ConfigureAwait(false);
+            var db=_redis.GetDatabase();
+            var msgId=GetSearchingMessageId(messageId);
+            var msg = await db.StreamReadGroupAsync(topic,groupId,groupId,msgId,1);
+            return msg.FirstOrDefault();
+        }
+
         public async Task<bool> TryLockMessageAsync(string topic, string groupName, string messageId, TimeSpan lockTime)
         {
             await ConnectAsync().ConfigureAwait(false);
@@ -127,6 +150,12 @@ namespace RedisMQ.RedisStream
             await _redis!.GetDatabase().StreamAddAsync(message.GetName(),   "value",JsonSerializer.Serialize(message))
                 .ConfigureAwait(false);
             return true;
+        }
+
+        public async Task TransferFailedMessageToDeadLetterAsync(TransportMessage msg,string messageId)
+        {
+            await PublishAsync(DeadLetterTopicName, msg.AsStreamEntries());
+            await Ack(msg.GetName(), msg.GetGroup(), messageId);
         }
 
 
@@ -189,6 +218,23 @@ namespace RedisMQ.RedisStream
         {
             _redis = await _connectionsPool.ConnectAsync()
                 .ConfigureAwait(false);
+        }
+        /// <summary>
+        /// https://stackoverflow.com/questions/62790203/use-xreadgroup-to-get-the-id-specified
+        /// </summary>
+        /// <param name="targetMessageId"></param>
+        /// <returns></returns>
+        private string GetSearchingMessageId(string targetMessageId)
+        {
+            var msgSplitRes=targetMessageId.Split('-');
+            var timeStamp=Convert.ToInt32(msgSplitRes[0]);
+            var order=Convert.ToInt32(msgSplitRes[1]);
+            if (order == 0)
+            {
+                return $"{timeStamp - 1}-0";
+            }
+
+            return $"{timeStamp}-{order - 1}";
         }
     }
 }

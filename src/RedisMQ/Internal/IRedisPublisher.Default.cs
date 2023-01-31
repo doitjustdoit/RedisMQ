@@ -43,7 +43,7 @@ namespace RedisMQ.Internal
 
             if (!string.IsNullOrEmpty(_redisMQOptions.TopicNamePrefix))
             {
-                name = $"{_redisMQOptions.TopicNamePrefix}.{name}";
+                name = $"{_redisMQOptions.TopicNamePrefix}:{name}";
             }
 
             if (!headers.ContainsKey(Headers.MessageId))

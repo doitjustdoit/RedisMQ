@@ -23,7 +23,15 @@ public static class ServiceDependencyInjection
         services.TryAddSingleton<MethodMatcherCache>();
 
         services.TryAddSingleton<IConsumerRegister, ConsumerRegister>();
-
+        //Options and extension service
+        var options = new RedisMQOptions();
+        setupAction(options);
+        services.Configure(setupAction);
+        foreach (var redisMqOptionsExtension in options.Extensions)
+        {
+            redisMqOptionsExtension.AddServices(services);
+        }
+        
         //Processors
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IProcessingServer, IDispatcher>(sp => sp.GetRequiredService<IDispatcher>()));
@@ -36,7 +44,8 @@ public static class ServiceDependencyInjection
         // services.TryAddSingleton<MessageNeedToRetryProcessor>();
         services.TryAddSingleton<TransportCheckProcessor>();
         services.TryAddSingleton<RefreshConnectionCapacityCheckProcessor>();
-
+        if(options.FailedRetryCount > 0)
+            services.TryAddSingleton<PendingMessageRetryProcessor>();
         //Sender
         services.TryAddSingleton<IMessageSender, MessageSender>();
 
@@ -45,14 +54,7 @@ public static class ServiceDependencyInjection
         // Warning: IPublishMessageSender need to inject at extension project. 
         services.TryAddSingleton<ISubscribeExecutor, SubscribeExecutor>();
 
-        //Options and extension service
-        var options = new RedisMQOptions();
-        setupAction(options);
-        services.Configure(setupAction);
-        foreach (var redisMqOptionsExtension in options.Extensions)
-        {
-            redisMqOptionsExtension.AddServices(services);
-        }
+       
 
         
         services.TryAddSingleton<IDispatcher, Dispatcher>();

@@ -50,7 +50,7 @@ namespace RedisMQ.Internal
 
                     if (!string.IsNullOrEmpty(TopicNamePrefix) && !string.IsNullOrEmpty(_topicName))
                     {
-                        _topicName = $"{TopicNamePrefix}.{_topicName}";
+                        _topicName = $"{TopicNamePrefix}:{_topicName}";
                     }
                 }
                 return _topicName;
