@@ -14,6 +14,13 @@
 - .NET 6
 - StackExchange.Redis
 
+# 安装
+
+| 包名 | Nuget地址                                                 |
+| :------------------------: | :----------------------------------------------------------: |
+| RedisMQ| [![Nuget](https://img.shields.io/nuget/dt/RedisMQ)](https://www.nuget.org/packages/RedisMQ)|
+| RedisMQ.Serialization.MessagePack | [![Nuget](https://img.shields.io/nuget/dt/RedisMQ.Serialization.MessagePack)](https://www.nuget.org/packages/RedisMQ.Serialization.MessagePack) |
+
 # 开始使用
 
 ## 注册服务
@@ -22,6 +29,8 @@
 builder.Services.AddRedisMQ(opt =>
 {
     opt.Configuration = ConfigurationOptions.Parse("localhost:55000,password=redispw");
+    // 如果要使用MessagePack而不是Json序列化，需要安装对应的库并使用下面这行代码
+    //mqOptions.UseMessagePack();
 });
 ```
 
