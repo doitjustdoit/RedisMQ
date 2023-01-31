@@ -29,6 +29,7 @@ public class TestBenchmarks
     private ServiceCollection _services;
     private ServiceProvider _providerWithMsgPack;
     private IRedisPublisher _publisherWithMsgPack;
+    private ISerializer _serializerMsgPack;
 
 
     [GlobalSetup]
@@ -54,51 +55,75 @@ public class TestBenchmarks
             action.UseMessagePack();
         });
         _services2.AddLogging();
-        _providerWithMsgPack=_services.BuildServiceProvider();
+        _providerWithMsgPack=_services2.BuildServiceProvider();
         _publisherWithMsgPack= _providerWithMsgPack.GetRequiredService<IRedisPublisher>();
+        _serializerMsgPack= _providerWithMsgPack.GetRequiredService<ISerializer>();
     }
-    [Benchmark]
-    public void Publish_10000()
+
+    // [Benchmark]
+    // public void SerializeTest()
+    // {
+    //     var msg=new Message();
+    //     msg.Headers.Add("test","test");
+    //     msg.Headers.Add("test2","test2");
+    //     msg.Headers.Add("test3","test3");
+    //     msg.Value = new TestTransDto();
+    //     var _=_serializer.Serialize( msg);
+    // }
+    // [Benchmark]
+    // public void SerializeMsgPackTest()
+    // {
+    //     var msg=new Message();
+    //     msg.Headers.Add("test","test");
+    //     msg.Headers.Add("test2","test2");
+    //     msg.Headers.Add("test3","test3");
+    //     msg.Value = new TestTransDto();
+    //     var _=_serializerMsgPack.Serialize( msg);
+    // }
+    [Benchmark()]
+    public void Publish_1000()
     {
         List<Task> tasks = new();
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 1000; i++)
         {
             tasks.Add(_publisher.PublishAsync("test2", new TestTransDto()));
         }
 
+        _publisher.PublishAsync("test2", new TestTransDto());
         Task.WaitAll(tasks.ToArray());
     }
     [Benchmark]
-    public void Publish_10000_MessagePack()
+    public void Publish_1000_MessagePack()
     {
         List<Task> tasks = new();
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 1000; i++)
         {
             tasks.Add(_publisherWithMsgPack.PublishAsync("test_msgpack", new TestTransDto()));
         }
-
+    
         Task.WaitAll(tasks.ToArray());
     }
-    [Benchmark]
-    public void Publish_WithoutSerialization_10000()
+    // [Benchmark]
+    public void Publish_WithoutSerialization_1000()
     {
         IRedisStreamManager redisStreamManager = _provider.GetRequiredService<IRedisStreamManager>();
         NameValueEntry[] valueEntry = new NameValueEntry[1] { new NameValueEntry("body", _rawData) };
-
+    
         List<Task> tasks = new();
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 1000; i++)
         {
             redisStreamManager.PublishAsync("test2", valueEntry);
         }
-
+    
         Task.WaitAll(tasks.ToArray());
     }
-
-    [Benchmark]
-    public void StreamAdd_10000()
+    
+    [Benchmark(Baseline = true)]
+    public void StreamAdd_1000()
     {
+        
         List<Task> t = new();
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 1000; i++)
         {
             t.Add(_redisClient.GetDatabase().StreamAddAsync("test_stream", "foo_name", "bar_value"));
         }
@@ -106,17 +131,40 @@ public class TestBenchmarks
         Task.WaitAll(t.ToArray());
     }
     [Benchmark]
-    public void StreamAdd_50000_5Con()
+    public void StreamAdd_1000_Json()
     {
-        var res=Parallel.ForEach(_connections, (connection) =>
+        List<Task> t = new();
+       
+        for (int i = 0; i < 1000; i++)
         {
-            List<Task> t = new();
-            for (int i = 0; i < 10000; i++)
-            {
-                t.Add(connection.GetDatabase().StreamAddAsync("test_stream", "foo_name", "bar_value"));
-            }
-
-            Task.WaitAll(t.ToArray());
-        });
+            var msg=new Message();
+            msg.Headers.Add("test","test");
+            msg.Headers.Add("test2","test2");
+            msg.Headers.Add("test3","test3");
+            msg.Value = new TestTransDto();
+            var json=_serializer.Serialize( msg);
+            t.Add(_redisClient.GetDatabase().StreamAddAsync("test_stream", "foo_name", json));
+        }
+    
+        Task.WaitAll(t.ToArray());
     }
+    [Benchmark]
+    public void StreamAdd_1000_MsgPack()
+    {
+        List<Task> t = new();
+       
+        for (int i = 0; i < 1000; i++)
+        {
+            var msg=new Message();
+            msg.Headers.Add("test","test");
+            msg.Headers.Add("test2","test2");
+            msg.Headers.Add("test3","test3");
+            msg.Value = new TestTransDto();
+            var json=_serializerMsgPack.Serialize( msg);
+            t.Add(_redisClient.GetDatabase().StreamAddAsync("test_stream", "foo_name", json));
+        }
+    
+        Task.WaitAll(t.ToArray());
+    }
+   
 }

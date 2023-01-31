@@ -30,7 +30,6 @@ namespace RedisMQ.Internal
 
         private MethodMatcherCache _selector = default!;
         private CancellationTokenSource _cts = new();
-        private BrokerAddress _serverAddress;
         private Task? _compositeTask;
         private bool _disposed;
         private bool _isHealthy = true;
@@ -89,8 +88,6 @@ namespace RedisMQ.Internal
                         {
                             using (var client = _consumerClientFactory.Create(matchGroup.Key))
                             {
-                                _serverAddress = client.BrokerAddress;
-
                                 RegisterMessageProcessor(client);
 
                                 client.Subscribe(topicIds);
@@ -185,7 +182,7 @@ namespace RedisMQ.Internal
                             var error = $"Message can not be found subscriber. Name:{name}, Group:{group}. {Environment.NewLine} see: https://github.com/dotnetcore/CAP/issues/63";
                             var ex = new SubscriberNotFoundException(error);
 
-                            TracingError(tracingTimestamp, transportMessage, client.BrokerAddress, ex);
+                            TracingError(tracingTimestamp, transportMessage, ex);
 
                             throw ex;
                         }
@@ -202,7 +199,7 @@ namespace RedisMQ.Internal
                         {
                             if (transportMessage.Body != null)
                             {
-                                dataUri = $"data:{val};base64," + Convert.ToBase64String(transportMessage.Body);
+                                dataUri = $"data:{val};base64," + transportMessage.Body;
                             }
                             else
                             {
@@ -214,7 +211,7 @@ namespace RedisMQ.Internal
                         {
                             if (transportMessage.Body != null)
                             {
-                                dataUri = "data:UnknownType;base64," + Convert.ToBase64String(transportMessage.Body);
+                                dataUri = "data:UnknownType;base64," +transportMessage.Body;
                             }
                             else
                             {
@@ -228,28 +225,12 @@ namespace RedisMQ.Internal
                     {
                         var content = _serializer.Serialize(message);
 
-                        client.Commit(sender);
-
-                        try
-                        {
-                            _options.FailedThresholdCallback?.Invoke(new FailedInfo
-                            {
-                                ServiceProvider = _serviceProvider,
-                                MessageType = MessageType.Subscribe,
-                                Message = message
-                            });
-
-                            _logger.ConsumerExecutedAfterThreshold(message.GetId(), _options.FailedRetryCount);
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.ExecutedThresholdCallbackFailed(e);
-                        }
-
                     }
                     else
-                    {
-                        client.Commit(sender);
+                    { 
+                        // client.Commit(sender);
+                        var (stream, groupname, id) = ((string stream, string group, string id))sender;
+                        message.Headers[Headers.StreamMessageId] = id;
                         _dispatcher.EnqueueToExecute(message, executor!);
                     }
                 }
@@ -259,7 +240,7 @@ namespace RedisMQ.Internal
 
                     client.Reject(sender);
 
-                    TracingError(tracingTimestamp, transportMessage, client.BrokerAddress, e);
+                    TracingError(tracingTimestamp, transportMessage, e);
                 }
             };
 
@@ -268,9 +249,9 @@ namespace RedisMQ.Internal
 
         #region tracing
 
-        private void TracingError(long? tracingTimestamp, TransportMessage message, BrokerAddress broker, Exception ex)
+        private void TracingError(long? tracingTimestamp, TransportMessage message, Exception ex)
         {
-           _logger.LogError(ex,$"timestamp: {tracingTimestamp} message: {message} broker: {broker} exception message: {ex.Message}");
+           _logger.LogError(ex,$"timestamp: {tracingTimestamp} message: {message}  exception message: {ex.Message}");
         }
 
         #endregion

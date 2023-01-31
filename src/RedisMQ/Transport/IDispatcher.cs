@@ -11,13 +11,10 @@ namespace RedisMQ.Transport
 {
     public interface IDispatcher : IProcessingServer
     {
-        ValueTask EnqueueToPublish(Message message);
 
         ValueTask EnqueueToExecute(Message message, ConsumerExecutorDescriptor? descriptor = null);
 
         ValueTask EnqueueToScheduler(Message message, DateTime publishTime, object? transaction = null);
         
-        int GetUnPublishedMessagesCount();
-
     }
 }

@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using RedisMQ.Messages;
 using StackExchange.Redis;
 
 namespace RedisMQ.RedisStream
@@ -47,7 +49,8 @@ namespace RedisMQ.RedisStream
                 .ConfigureAwait(false);
         }
 
-        public async IAsyncEnumerable<IEnumerable<StackExchange.Redis.RedisStream>> PollStreamsLatestMessagesAsync(string[] streams,
+        public async IAsyncEnumerable<IEnumerable<StackExchange.Redis.RedisStream>> PollStreamsLatestMessagesAsync(
+            string[] streams,
             string consumerGroup, TimeSpan pollDelay, [EnumeratorCancellation] CancellationToken token)
         {
             var positions = streams.Select(stream => new StreamPosition(stream, StreamPosition.NewMessages));
@@ -63,27 +66,69 @@ namespace RedisMQ.RedisStream
             }
         }
 
-        public async IAsyncEnumerable<IEnumerable<StackExchange.Redis.RedisStream>> PollStreamsPendingMessagesAsync(string[] streams,
-            string consumerGroup, TimeSpan pollDelay, [EnumeratorCancellation] CancellationToken token)
+        public async Task<IEnumerable<StreamPendingMessageInfo>> PollStreamsPendingMessagesInfoAsync(
+            string[] streams,
+            string consumerGroup,StreamPosition[] positions, [EnumeratorCancellation] CancellationToken token)
         {
-            var positions = streams.Select(stream => new StreamPosition(stream, StreamPosition.Beginning));
-
-            while (true)
+            
+            var db = _redis!.GetDatabase();
+            var result = new List<StreamPendingMessageInfo>(positions.Length);
+            foreach (var position in positions)
             {
-                token.ThrowIfCancellationRequested();
-
-                var result = await TryReadConsumerGroupAsync(consumerGroup, positions.ToArray(), token)
-                    .ConfigureAwait(false);
-                
-                yield return result;
-               
-                //Once we consumed our history of pending messages, we can break the loop.
-                if (result.All(s => s.Entries.Length < _options.StreamEntriesCount))
-                    break;
-
-                token.WaitHandle.WaitOne(pollDelay);
+                var pendingMessages = await db.StreamPendingMessagesAsync(position.Key,
+                    consumerGroup,
+                    count: 1,
+                    consumerName: consumerGroup,
+                    minId: position.Position);
+                result.Add(pendingMessages.FirstOrDefault());
             }
+            return result;
         }
+
+        public async Task<Dictionary<string, StreamEntry?>> PollStreamsPendingMessagesAsync(string[] topics,
+            string groupId, StreamPosition[] positions,
+            StreamPendingMessageInfo[] streamPendingMessageInfos,
+            CancellationToken cancellationToken)
+        {
+            var db=_redis!.GetDatabase();
+            Dictionary<string,StreamEntry?> res = new();
+            for (var i = 0; i < topics.Length; i++)
+            {
+              
+                if(await TryLockMessageAsync(topics[i],groupId,streamPendingMessageInfos[i].MessageId.ToString(),TimeSpan.FromSeconds(30)))
+                {
+                    var msg = await db.StreamReadGroupAsync(new RedisKey(topics[i]), new RedisValue(groupId),
+                        new RedisValue(groupId), positions[i].Position, 1);
+                    res.Add(topics[i], msg.Length>0?msg[0]:null);
+                }
+                else
+                {
+                    res.Add(topics[i],null);
+                }
+                
+
+            }
+            return res;
+        }
+
+        public async Task<bool> TryLockMessageAsync(string topic, string groupName, string messageId, TimeSpan lockTime)
+        {
+            await ConnectAsync().ConfigureAwait(false);
+            return await _redis.GetDatabase().StringSetAsync($"RedisMQ:{topic}:{groupName}:{messageId}", "1",
+                lockTime, When.NotExists);
+        }
+
+        public async Task<bool> PublishAsync(Message message)
+        {
+            await ConnectAsync()
+                .ConfigureAwait(false);
+
+            //The object returned from GetDatabase is a cheap pass - thru object, and does not need to be stored
+            await _redis!.GetDatabase().StreamAddAsync(message.GetName(),   "value",JsonSerializer.Serialize(message))
+                .ConfigureAwait(false);
+            return true;
+        }
+
 
         public async Task Ack(string stream, string consumerGroup, string messageId)
         {
@@ -93,6 +138,8 @@ namespace RedisMQ.RedisStream
             await _redis!.GetDatabase().StreamAcknowledgeAsync(stream, consumerGroup, messageId)
                 .ConfigureAwait(false);
         }
+
+       
 
         private async Task<IEnumerable<StackExchange.Redis.RedisStream>> TryReadConsumerGroupAsync(string consumerGroup,
             StreamPosition[] positions, CancellationToken token)
@@ -108,17 +155,18 @@ namespace RedisMQ.RedisStream
 
                 var database = _redis!.GetDatabase();
 
-                await foreach (var position in database.TryGetOrCreateConsumerGroupPositionsAsync(positions, consumerGroup, _logger)
-                    .ConfigureAwait(false).WithCancellation(token))
+                await foreach (var position in database
+                                   .TryGetOrCreateConsumerGroupPositionsAsync(positions, consumerGroup, _logger)
+                                   .ConfigureAwait(false).WithCancellation(token))
                 {
                     createdPositions.Add(position);
                 }
 
                 if (!createdPositions.Any()) return Array.Empty<StackExchange.Redis.RedisStream>();
-
                 //calculate keys HashSlots to start reading per HashSlot
                 var groupedPositions = createdPositions.GroupBy(s => _redis.GetHashSlot(s.Key))
-                    .Select(group => database.StreamReadGroupAsync(group.ToArray(), consumerGroup, consumerGroup, (int)_options.StreamEntriesCount));
+                    .Select(group => database.StreamReadGroupAsync(group.ToArray(), consumerGroup, consumerGroup,
+                        (int)_options.StreamEntriesCount));
 
                 var readSet = await Task.WhenAll(groupedPositions)
                     .ConfigureAwait(false);

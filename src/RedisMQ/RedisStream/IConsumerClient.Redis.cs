@@ -37,9 +37,6 @@ namespace RedisMQ.RedisStream
         public event EventHandler<TransportMessage>? OnMessageReceived;
 
         public event EventHandler<LogMessageEventArgs>? OnLog;
-
-        public BrokerAddress BrokerAddress => new("redis", _options.Value.Endpoint);
-
         public void Subscribe(IEnumerable<string> topics)
         {
             if (topics == null) throw new ArgumentNullException(nameof(topics));
@@ -52,6 +49,7 @@ namespace RedisMQ.RedisStream
 
         public void Listening(TimeSpan timeout, CancellationToken cancellationToken)
         {
+            _ = HandleForPendingMessageAsync(timeout,cancellationToken);
             _ = ListeningForMessagesAsync(timeout, cancellationToken);
             while (true)
             {
@@ -59,6 +57,53 @@ namespace RedisMQ.RedisStream
                 cancellationToken.WaitHandle.WaitOne(timeout);
             }
             // ReSharper disable once FunctionNeverReturns
+        }
+
+        private async Task HandleForPendingMessageAsync(TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            Task.Run(async () =>
+            {
+                var positions = _topics.Select(it => new StreamPosition(it, StreamPosition.Beginning)).ToArray();
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    //first time, we want to read our pending messages, in case we crashed and are recovering.
+                    var pendingMsgInfos =
+                        (await _redis.PollStreamsPendingMessagesInfoAsync(_topics, _groupId,positions, cancellationToken)).ToArray();
+                    var pendingMessages =
+                    await _redis.PollStreamsPendingMessagesAsync(_topics, _groupId,positions,pendingMsgInfos, cancellationToken);
+                    await ConsumePendingMessages(pendingMessages);
+                    for (var i = 0; i < positions.Length; i++)
+                    {
+                        if(pendingMessages[_topics[i]].HasValue&&pendingMsgInfos[i].MessageId.HasValue)
+                            positions[i]=new StreamPosition(_topics[i], pendingMsgInfos[i].MessageId);
+                        else
+                            positions[i]=new StreamPosition(_topics[i], StreamPosition.Beginning);
+                    }
+                    if(pendingMessages.All(it=>it.Value.HasValue)==false)
+                        cancellationToken.WaitHandle.WaitOne(timeout*3);
+                }
+            });
+           
+        }
+
+        private async Task ConsumePendingMessages(Dictionary<string, StreamEntry?> pendingMsgs)
+        {
+            foreach (var item in pendingMsgs)
+            {
+                if (item.Value.HasValue)
+                {
+                    var message = RedisMessage.Create(item.Value!.Value, _groupId);
+                    try
+                    {
+                        OnMessageReceived?.Invoke((item.Key, _groupId, item.Value.Value.Id.ToString()), message);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e,"Error while consuming message");
+                    }
+                }
+            }
         }
 
         public void Commit(object sender)
@@ -80,12 +125,6 @@ namespace RedisMQ.RedisStream
 
         private async Task ListeningForMessagesAsync(TimeSpan timeout, CancellationToken cancellationToken)
         {
-            //first time, we want to read our pending messages, in case we crashed and are recovering.
-            var pendingMsgs = _redis.PollStreamsPendingMessagesAsync(_topics, _groupId, timeout, cancellationToken);
-
-            await ConsumeMessages(pendingMsgs, StreamPosition.Beginning)
-                .ConfigureAwait(false);
-
             //Once we consumed our history, we can start getting new messages.
             var newMsgs = _redis.PollStreamsLatestMessagesAsync(_topics, _groupId, timeout, cancellationToken);
 
@@ -108,12 +147,8 @@ namespace RedisMQ.RedisStream
                         try
                         {
                             var message = RedisMessage.Create(entry, _groupId);
-                            if (position == StreamPosition.Beginning)
-                            {
-                                var parsed = DateTime.TryParse( message.Headers[Headers.SentTime],out var sentTime);
-                                if (parsed && (sentTime - DateTime.Now) < TimeSpan.FromMinutes(3))
-                                    continue;
-                            }
+                            await _redis.TryLockMessageAsync(stream.Key.ToString(), _groupId, entry.Id.ToString(),
+                                TimeSpan.FromSeconds(30));
                             OnMessageReceived?.Invoke((stream.Key.ToString(), _groupId, entry.Id.ToString()), message);
                         }
                         catch (Exception ex)

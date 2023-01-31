@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace RedisMQ.RedisStream
 {
     internal class RedisConnectionPool : IRedisConnectionPool, IDisposable
     {
-        private readonly Queue<RedisConnection> _connections = new();
+        private readonly ConcurrentBag<RedisConnection> _connections ;
 
         private readonly ILoggerFactory _loggerFactory;
         private readonly SemaphoreSlim _poolLock = new(1);
@@ -26,6 +27,7 @@ namespace RedisMQ.RedisStream
         {
             _redisOptions = options.Value;
             _loggerFactory = loggerFactory;
+            _connections = new();
             Init().GetAwaiter().GetResult();
         }
 
@@ -71,7 +73,7 @@ namespace RedisMQ.RedisStream
                     var connection =await RedisConnection.ConnectAsync(_redisOptions,
                         _loggerFactory.CreateLogger<RedisConnection>());
 
-                    _connections.Enqueue(connection);
+                    _connections.Add(connection);
                 }
             }
             finally

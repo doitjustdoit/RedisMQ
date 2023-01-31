@@ -54,11 +54,8 @@ public static class ServiceDependencyInjection
             redisMqOptionsExtension.AddServices(services);
         }
 
-        //Executors
-        if (options.UseDispatchingPerGroup)
-            services.TryAddSingleton<IDispatcher, DispatcherPerGroup>();
-        else
-            services.TryAddSingleton<IDispatcher, Dispatcher>();
+        
+        services.TryAddSingleton<IDispatcher, Dispatcher>();
 
         services.Configure(setupAction);
 

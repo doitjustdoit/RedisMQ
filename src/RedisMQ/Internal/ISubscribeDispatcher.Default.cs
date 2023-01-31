@@ -98,53 +98,8 @@ namespace RedisMQ.Internal
             {
                 _logger.ConsumerExecuteFailed(message.GetName(),message.GetId(),null, ex);
 
-                return (await SetFailedState(message, ex), OperateResult.Failed(ex));
+                return (false, OperateResult.Failed(ex));
             }
-        }
-
-        private async Task<bool> SetFailedState(Message message, Exception ex)
-        {
-            if (ex is SubscriberNotFoundException)
-            {
-                message.AddRetry(_options.FailedRetryCount); // not retry if SubscriberNotFoundException
-            }
-
-            var needRetry = UpdateMessageForRetry(message);
-
-            message.AddOrUpdateException(ex);
-            return needRetry;
-        }
-
-        private bool UpdateMessageForRetry(Message message)
-        {
-            var retries = message.AddRetry();
-           
-            var retryCount = Math.Min(_options.FailedRetryCount, 3);
-
-            if (retries >= retryCount)
-            {
-                if (retries == _options.FailedRetryCount)
-                {
-                    try
-                    {
-                        _options.FailedThresholdCallback?.Invoke(new FailedInfo
-                        {
-                            ServiceProvider = _provider,
-                            MessageType = MessageType.Subscribe,
-                            Message = message
-                        });
-
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.ExecutedThresholdCallbackFailed(ex);
-                    }
-                }
-                return false;
-            }
-
-
-            return true;
         }
 
         private async Task InvokeConsumerMethodAsync(Message message, ConsumerExecutorDescriptor descriptor, CancellationToken cancellationToken)

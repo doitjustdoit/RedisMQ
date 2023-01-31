@@ -20,7 +20,6 @@ namespace RedisMQ.RedisStream
                 var created = false;
                 try
                 {
-                    var isConnected = database.IsConnected("ping");
                     await database.TryGetOrCreateStreamConsumerGroupAsync(position.Key, consumerGroup)
                         .ConfigureAwait(false);
 

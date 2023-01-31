@@ -18,8 +18,9 @@ namespace RedisMQ.RedisStream
         {
             return new[]
             {
-                new NameValueEntry(Headers, ToJson(message.Headers)),
-                new NameValueEntry(Body, ToJson(message.Body))
+                new NameValueEntry(Headers,  ToJson(message.Headers)),
+                // new NameValueEntry(Headers,  ToJson(message.Headers)),
+                new NameValueEntry(Body, message.Body)
             };
         }
 
@@ -33,9 +34,8 @@ namespace RedisMQ.RedisStream
                 
             var headers = JsonSerializer.Deserialize<IDictionary<string, string?>>(headersRaw!)!;
 
-            var bodyRaw = streamEntry[Body];
 
-            var body = !bodyRaw.IsNullOrEmpty ? JsonSerializer.Deserialize<byte[]>(bodyRaw!) : null;
+            var body = streamEntry[Body].ToString();
 
             headers.TryAdd(Messages.Headers.Group, groupId);
 

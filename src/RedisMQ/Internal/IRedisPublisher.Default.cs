@@ -53,8 +53,8 @@ namespace RedisMQ.Internal
             }
 
             headers.Add(Headers.MessageName, name);
-            headers.Add(Headers.Type, typeof(T).Name);
-            headers.Add(Headers.SentTime, DateTimeOffset.Now.ToString());
+            // headers.Add(Headers.Type, typeof(T).Name);
+            // headers.Add(Headers.SentTime, DateTimeOffset.Now.ToString());
 
             var message = new Message(headers, value);
 

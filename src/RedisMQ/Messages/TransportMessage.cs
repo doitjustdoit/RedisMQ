@@ -12,7 +12,7 @@ namespace RedisMQ.Messages
     [Serializable]
     public class TransportMessage
     {
-        public TransportMessage(IDictionary<string, string?> headers, byte[]? body)
+        public TransportMessage(IDictionary<string, string?> headers, string? body=null)
         {
             Headers = headers ?? throw new ArgumentNullException(nameof(headers));
             Body = body;
@@ -26,7 +26,7 @@ namespace RedisMQ.Messages
         /// <summary>
         /// Gets the body object of this message
         /// </summary>
-        public byte[]? Body { get; }
+        public string? Body { get; }
 
         public string GetId()
         {

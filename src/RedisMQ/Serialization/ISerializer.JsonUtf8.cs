@@ -30,8 +30,8 @@ namespace RedisMQ.Serialization
                 return Task.FromResult(new TransportMessage(message.Headers, null));
             }
 
-            var jsonBytes = JsonSerializer.SerializeToUtf8Bytes(message.Value, _jsonSerializerOptions);
-            return Task.FromResult(new TransportMessage(message.Headers, jsonBytes));
+            var json = JsonSerializer.Serialize(message.Value, _jsonSerializerOptions);
+            return Task.FromResult(new TransportMessage(message.Headers, json));
         }
 
         public Task<Message> DeserializeAsync(TransportMessage transportMessage, Type? valueType)

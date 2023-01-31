@@ -1,31 +1,33 @@
 ﻿using System.Diagnostics;
 using BenchmarkDotNet.Running;
 
-Console.WriteLine("Hello World!");
-
-
 #if DEBUG
+
 TestBenchmarks testBenchmark = new();
 testBenchmark.Setup();
 Stopwatch sw = new();
-sw.Restart();
-testBenchmark.Publish_10000();
-Console.WriteLine($"Publish 10000 messages in {sw.ElapsedMilliseconds} ms");
-sw.Restart();
-testBenchmark.Publish_10000_MessagePack();
-Console.WriteLine($"Publish With MessagePack 10000 messages in {sw.ElapsedMilliseconds} ms");
-sw.Restart();
-testBenchmark.Publish_WithoutSerialization_10000();
-Console.WriteLine($"Publish Without Serialization 10000 messages in {sw.ElapsedMilliseconds} ms");
-sw.Restart();
-testBenchmark.StreamAdd_10000();
-Console.WriteLine($"StreamAdd 10000 messages in {sw.ElapsedMilliseconds} ms");
-sw.Restart();
-testBenchmark.StreamAdd_50000_5Con();
-Console.WriteLine($"StreamAdd 50000 messages in 5 concurrent tasks and connections in {sw.ElapsedMilliseconds} ms");
-sw.Restart();
+for (int i = 0; i < 5; i++)
+{
+    sw.Restart();
+    testBenchmark.Publish_WithoutSerialization_1000();
+    Console.WriteLine($"Publish Without Serialization 1000 messages in {sw.ElapsedMilliseconds} ms");
+    sw.Restart();
+    testBenchmark.StreamAdd_1000();
+    Console.WriteLine($"StreamAdd 1000 messages in {sw.ElapsedMilliseconds} ms");
+    sw.Restart();
+    testBenchmark.StreamAdd_1000_Json();
+    Console.WriteLine($"StreamAdd_Json 1000 messages in {sw.ElapsedMilliseconds} ms");
+    sw.Restart();
+    testBenchmark.StreamAdd_1000_MsgPack();
+    Console.WriteLine($"StreamAdd_MsgPack 1000 messages in {sw.ElapsedMilliseconds} ms");
+    sw.Restart();
+    testBenchmark.Publish_1000();
+    Console.WriteLine($"Publish 1000 messages in {sw.ElapsedMilliseconds} ms");
+    sw.Restart();
+    testBenchmark.Publish_1000_MessagePack();
+    Console.WriteLine($"Publish With MessagePack 1000 messages in {sw.ElapsedMilliseconds} ms");
+}
 #else
 var summary = BenchmarkRunner.Run<TestBenchmarks>();
 #endif
 
-Console.ReadLine();

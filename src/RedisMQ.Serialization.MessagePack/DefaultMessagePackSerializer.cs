@@ -27,7 +27,7 @@ public class DefaultMessagePackSerializer:ISerializer
         }
 
         var msgBytes = MessagePackSerializer.Serialize(message.Value, ContractlessStandardResolver.Options);
-        return Task.FromResult(new TransportMessage(message.Headers, msgBytes));
+        return Task.FromResult(new TransportMessage(message.Headers, Convert.ToBase64String(msgBytes)));
     }
 
     public Message? Deserialize(string sourceBytesBase64)
@@ -42,8 +42,8 @@ public class DefaultMessagePackSerializer:ISerializer
         {
             return Task.FromResult(new Message(transportMessage.Headers, null));
         }
-
-        var obj = MessagePackSerializer.Deserialize(valueType,transportMessage.Body, ContractlessStandardResolver.Options);
+        byte[] bytes = Convert.FromBase64String(transportMessage.Body);
+        var obj = MessagePackSerializer.Deserialize(valueType,bytes, ContractlessStandardResolver.Options);
 
         return Task.FromResult(new Message(transportMessage.Headers, obj));
     }

@@ -15,8 +15,6 @@ namespace RedisMQ.Transport
     /// </summary>
     public interface IConsumerClient : IDisposable
     {
-        BrokerAddress BrokerAddress { get; }
-
         /// <summary>
         /// Create (if necessary) and get topic identifiers
         /// </summary>

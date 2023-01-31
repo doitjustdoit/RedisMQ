@@ -25,24 +25,23 @@ public class Dispatcher : IDispatcher
     private readonly RedisMQOptions _options;
     private readonly IMessageSender _sender;
     private readonly Queue<Message> _schedulerQueue;
-    private readonly bool _enablePrefetch;
 
     private Channel<Message> _publishedChannel = default!;
-    private Channel<(Message, ConsumerExecutorDescriptor?)> _receivedChannel = default!;
     private long _nextSendTime = DateTime.MaxValue.Ticks;
+    private readonly IConsumerClientFactory _consumerClientFactory;
 
     public Dispatcher(ILogger<Dispatcher> logger,
         IMessageSender sender,
         IOptions<RedisMQOptions> options,
-        ISubscribeExecutor executor
-        )
+        ISubscribeExecutor executor,
+            IConsumerClientFactory consumerClientFactory)
     {
+        _consumerClientFactory=consumerClientFactory;
         _logger = logger;
         _sender = sender;
         _options = options.Value;
         _executor = executor;
         _schedulerQueue = new ();
-        _enablePrefetch = options.Value.EnableConsumerPrefetch;
     }
 
     public async void Start(CancellationToken stoppingToken)
@@ -65,23 +64,7 @@ public class Dispatcher : IDispatcher
             .Select(_ => Task.Factory.StartNew(Sending, _tasksCts.Token,
                 TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray()).ConfigureAwait(false);
 
-        if (_enablePrefetch)
-        {
-            capacity = _options.ConsumerThreadCount * 300;
-            _receivedChannel = Channel.CreateBounded<(Message, ConsumerExecutorDescriptor?)>(
-                new BoundedChannelOptions(capacity > 3000 ? 3000 : capacity)
-                {
-                    AllowSynchronousContinuations = true,
-                    SingleReader = _options.ConsumerThreadCount == 1,
-                    SingleWriter = true,
-                    FullMode = BoundedChannelFullMode.Wait
-                });
-
-            await Task.WhenAll(Enumerable.Range(0, _options.ConsumerThreadCount)
-                .Select(_ => Task.Factory.StartNew(Processing, _tasksCts.Token,
-                    TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray()).ConfigureAwait(false);
-        }
-
+       
         _ = Task.Factory.StartNew(async () =>
         {
             //When canceling, place the message status of unsent in the queue to delayed
@@ -144,10 +127,6 @@ public class Dispatcher : IDispatcher
        
     }
 
-    public int GetUnPublishedMessagesCount()
-    {
-        return _schedulerQueue.Count;
-    }
 
     public async ValueTask EnqueueToPublish(Message message)
     {
@@ -168,18 +147,15 @@ public class Dispatcher : IDispatcher
     {
         try
         {
-            if (_enablePrefetch)
+            var res=await _executor.ExecuteAsync(message, descriptor, _tasksCts!.Token).ConfigureAwait(false);
+            if (res.Succeeded)
             {
-                if (!_receivedChannel.Writer.TryWrite((message, descriptor)))
-                {
-                    while (await _receivedChannel.Writer.WaitToWriteAsync(_tasksCts!.Token).ConfigureAwait(false))
-                        if (_receivedChannel.Writer.TryWrite((message, descriptor)))
-                            return;
-                }
+                using var _consumerClient = _consumerClientFactory.Create(message.Headers[Headers.Group]);
+                _consumerClient.Commit((message.Headers[Headers.MessageName],message.Headers[Headers.Group],message.Headers[Headers.StreamMessageId]));
             }
             else
             {
-                await _executor.ExecuteAsync(message, descriptor, _tasksCts!.Token).ConfigureAwait(false);
+                _logger.LogError(res.Exception,"An exception occurred when invoke subscriber.");
             }
         }
         catch (OperationCanceledException)
@@ -221,29 +197,4 @@ public class Dispatcher : IDispatcher
         }
     }
 
-    private async ValueTask Processing()
-    {
-        try
-        {
-            while (await _receivedChannel.Reader.WaitToReadAsync(_tasksCts!.Token).ConfigureAwait(false))
-                while (_receivedChannel.Reader.TryRead(out var message))
-                    try
-                    {
-                        await _executor.ExecuteAsync(message.Item1, message.Item2, _tasksCts.Token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        //expected
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError(e,
-                            $"An exception occurred when invoke subscriber. MessageId:{message.Item1.GetId()}");
-                    }
-        }
-        catch (OperationCanceledException)
-        {
-            // expected
-        }
-    }
 }

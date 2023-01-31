@@ -6,7 +6,7 @@ using StackExchange.Redis;
 
 namespace RedisMQ.RedisStream
 {
-    internal interface IRedisConnectionPool
+    public interface IRedisConnectionPool
     {
         Task<IConnectionMultiplexer> ConnectAsync();
 

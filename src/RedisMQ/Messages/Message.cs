@@ -31,7 +31,12 @@ namespace RedisMQ.Messages
         }
         public static string GetName(this Message message)
         {
-            return message.Headers[Messages.Headers.MessageName]!;
+            return message.Headers[Headers.MessageName]!;
+        }
+
+        public static string? GetStreamMessageId(this Message message)
+        {
+            return message.Headers[Headers.StreamMessageId];
         }
         public static string? GetGroup(this Message message)
         {

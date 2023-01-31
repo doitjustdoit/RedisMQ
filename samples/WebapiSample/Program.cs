@@ -1,5 +1,4 @@
 using RedisMQ;
-using RedisMQ.Serialization.MessagePack;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +12,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddRedisMQ(mqOptions =>
 {
     mqOptions.Configuration = ConfigurationOptions.Parse("localhost:6379");
-    mqOptions.UseMessagePack();
+    // mqOptions.UseMessagePack();
 });
 
 var app = builder.Build();
