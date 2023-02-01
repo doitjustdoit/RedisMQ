@@ -1,3 +1,5 @@
+[![GitHub Clones](https://img.shields.io/badge/dynamic/json?color=success&label=Clone&query=count&url=https://gist.githubusercontent.com/li-zheng-hao/d91359703ad50007785ec614ae082994/raw/clone.json&logo=github)](https://github.com/MShawon/github-clone-count-badge)
+
 # RedisMQ
 
 一个基于Redis Stream的轻量级高性能消息队列，基本特性：
