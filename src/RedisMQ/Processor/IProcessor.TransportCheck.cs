@@ -23,23 +23,27 @@ public class TransportCheckProcessor : IProcessor
 
     public virtual async Task ProcessAsync(ProcessingContext context)
     {
-        if (context == null) throw new ArgumentNullException(nameof(context));
-
-        context.ThrowIfStopping();
-
-        _logger.LogDebug("Transport connection checking...");
-
-        if (!_register.IsHealthy())
+        while (true)
         {
-            _logger.LogWarning("Transport connection is unhealthy, reconnection...");
+            if (context == null) throw new ArgumentNullException(nameof(context));
 
-            _register.ReStart();
-        }
-        else
-        {
-            _logger.LogDebug("Transport connection healthy!");
-        }
+            context.ThrowIfStopping();
 
-        await context.WaitAsync(_waitingInterval).ConfigureAwait(false);
+            _logger.LogDebug("Transport connection checking...");
+
+            if (!_register.IsHealthy())
+            {
+                _logger.LogWarning("Transport connection is unhealthy, reconnection...");
+
+                _register.ReStart();
+            }
+            else
+            {
+                _logger.LogDebug("Transport connection healthy!");
+            }
+
+            await context.WaitAsync(_waitingInterval).ConfigureAwait(false);
+        }
+        
     }
 }

@@ -47,19 +47,22 @@ public class ScanFailedMessageProcessor : IProcessor
 
     public virtual async Task ProcessAsync(ProcessingContext context)
     {
-        if (_groupingMatches is null)
+        while (true)
         {
-            Init();
-        }
-        if (context == null) throw new ArgumentNullException(nameof(context));
+            if (_groupingMatches is null)
+            {
+                Init();
+            }
+            if (context == null) throw new ArgumentNullException(nameof(context));
 
-        context.ThrowIfStopping();
+            context.ThrowIfStopping();
 
-        ScanFailedMessages(context.CancellationToken);
+            await ScanFailedMessages(context.CancellationToken);
        
-        _logger.LogDebug("Transport connection checking...");
+            _logger.LogDebug("Transport connection checking...");
 
-        await context.WaitAsync(_waitingInterval).ConfigureAwait(false);
+            await context.WaitAsync(_waitingInterval).ConfigureAwait(false);
+        }
     }
 
     private async Task ScanFailedMessages(CancellationToken cancellationToken)

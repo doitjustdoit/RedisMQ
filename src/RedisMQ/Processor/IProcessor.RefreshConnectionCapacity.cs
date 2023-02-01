@@ -8,13 +8,13 @@ using RedisMQ.RedisStream;
 
 namespace RedisMQ.Processor;
 
-internal class RefreshConnectionCapacityCheckProcessor : IProcessor
+internal class RefreshConnectionCapacityProcessor : IProcessor
 {
-    private readonly ILogger<RefreshConnectionCapacityCheckProcessor> _logger;
+    private readonly ILogger<RefreshConnectionCapacityProcessor> _logger;
     private readonly TimeSpan _waitingInterval;
     private readonly IRedisConnectionPool _connectionPool;
 
-    public RefreshConnectionCapacityCheckProcessor(ILogger<RefreshConnectionCapacityCheckProcessor> logger,
+    public RefreshConnectionCapacityProcessor(ILogger<RefreshConnectionCapacityProcessor> logger,
         IRedisConnectionPool connectionPool)
     {
         _logger = logger;
@@ -24,16 +24,20 @@ internal class RefreshConnectionCapacityCheckProcessor : IProcessor
 
     public virtual async Task ProcessAsync(ProcessingContext context)
     {
-        if (context == null) throw new ArgumentNullException(nameof(context));
+        while (true)
+        {
+            if (context == null) throw new ArgumentNullException(nameof(context));
 
-        context.ThrowIfStopping();
+            context.ThrowIfStopping();
 
-        _logger.LogDebug("refresh connection capacity...");
+            _logger.LogDebug("refresh connection capacity...");
 
-        _connectionPool.RefreshConnectionCapacity();
+            _connectionPool.RefreshConnectionCapacity();
         
-        _logger.LogDebug("refresh connection capacity success!");
+            _logger.LogDebug("refresh connection capacity success!");
 
-        await context.WaitAsync(_waitingInterval).ConfigureAwait(false);
+            await context.WaitAsync(_waitingInterval).ConfigureAwait(false);
+        }
+     
     }
 }

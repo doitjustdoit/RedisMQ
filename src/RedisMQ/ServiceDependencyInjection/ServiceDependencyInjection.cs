@@ -41,10 +41,10 @@ public static class ServiceDependencyInjection
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IProcessingServer, RedisProcessingServer>());
 
         //Queue's message processor
-        services.TryAddSingleton<TransportCheckProcessor>();
-        services.TryAddSingleton<RefreshConnectionCapacityCheckProcessor>();
+        services.AddSingleton<IProcessor,TransportCheckProcessor>();
+        services.AddSingleton<IProcessor,RefreshConnectionCapacityProcessor>();
         if(options.FailedRetryCount > 0)
-            services.TryAddSingleton<ScanFailedMessageProcessor>();
+            services.AddSingleton<IProcessor,ScanFailedMessageProcessor>();
         //Sender
         services.TryAddSingleton<IMessageSender, MessageSender>();
 

@@ -44,9 +44,8 @@ public class RedisProcessingServer : IProcessingServer
         _context = new ProcessingContext(_provider, _cts.Token);
 
         var processorTasks = GetProcessors()
-            .Select(InfiniteRetry)
             .Select(p => p.ProcessAsync(_context));
-         _compositeTask = Task.WhenAll(processorTasks);
+        _compositeTask = Task.WhenAll(processorTasks);
 
     }
 
@@ -78,19 +77,15 @@ public class RedisProcessingServer : IProcessingServer
         }
     }
 
-    private IProcessor InfiniteRetry(IProcessor inner)
-    {
-        return new InfiniteRetryProcessor(inner, _loggerFactory);
-    }
-
     private IProcessor[] GetProcessors()
     {
-        var returnedProcessors = new List<IProcessor>
-        {
-            _provider.GetRequiredService<TransportCheckProcessor>(),
-            _provider.GetRequiredService<RefreshConnectionCapacityCheckProcessor>(),
-            _provider.GetRequiredService<ScanFailedMessageProcessor>(),
-        };
+        // var returnedProcessors = new List<IProcessor>
+        // {
+        //     _provider.GetRequiredService<TransportCheckProcessor>(),
+        //     _provider.GetRequiredService<RefreshConnectionCapacityCheckProcessor>(),
+        //     _provider.GetRequiredService<ScanFailedMessageProcessor>(),
+        // };
+        var returnedProcessors= _provider.GetServices<IProcessor>();
 
         return returnedProcessors.ToArray();
     }
