@@ -12,7 +12,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddRedisMQ(mqOptions =>
 {
     mqOptions.Configuration = ConfigurationOptions.Parse("localhost:6379");
-    mqOptions.FailedRetryCount = 3;
+    mqOptions.FailedRetryCount = 1;
     mqOptions.FailedThresholdCallback += message =>
     {
         // 短信 日志 邮件通知。。。
@@ -20,6 +20,7 @@ builder.Services.AddRedisMQ(mqOptions =>
         var group = message.GetGroup();
         var msgId = message.GetId();
         var payload = message.Body;
+        Console.WriteLine($"失败次数达到上限{topic}-{group}-{msgId}-{payload}");
     };
     // mqOptions.UseMessagePack();
 });

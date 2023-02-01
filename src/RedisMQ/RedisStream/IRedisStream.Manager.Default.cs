@@ -163,7 +163,6 @@ namespace RedisMQ.RedisStream
         {
             await ConnectAsync()
                 .ConfigureAwait(false);
-
             await _redis!.GetDatabase().StreamAcknowledgeAsync(stream, consumerGroup, messageId)
                 .ConfigureAwait(false);
         }
@@ -227,8 +226,8 @@ namespace RedisMQ.RedisStream
         private string GetSearchingMessageId(string targetMessageId)
         {
             var msgSplitRes=targetMessageId.Split('-');
-            var timeStamp=Convert.ToInt32(msgSplitRes[0]);
-            var order=Convert.ToInt32(msgSplitRes[1]);
+            var timeStamp=Convert.ToInt64(msgSplitRes[0]);
+            var order=Convert.ToInt64(msgSplitRes[1]);
             if (order == 0)
             {
                 return $"{timeStamp - 1}-0";

@@ -73,7 +73,7 @@ public class PendingMessageRetryProcessor : IProcessor
             {
                 var msgEntry=await _redisStreamManager.PollStreamsCertainMessageAsync(streamInfo.Item1, streamInfo.Item2, msgId,
                     cancellationToken);
-                TransportMessage msg= RedisMessage.Create(msgEntry, streamInfo.Item1);
+                TransportMessage msg= RedisMessage.Create(msgEntry, streamInfo.Item2);
                 notifyMsgs.Add(msg);
                 await _redisStreamManager.TransferFailedMessageToDeadLetterAsync(msg, msgId);
             }

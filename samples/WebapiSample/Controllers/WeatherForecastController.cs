@@ -21,16 +21,37 @@ public class WeatherForecastController : ControllerBase,IRedisSubscribe
         _logger = logger;
     }
 
-
+    /// <summary>
+    /// 发送消息 成功
+    /// </summary>
+    /// <param name="msg"></param>
+    /// <returns></returns>
     [HttpPost]
-    public IActionResult Publish([FromQuery]string msg="hello world")
+    public IActionResult PublishSuccess([FromQuery]string msg="hello world")
     {
-        _redisPublisher.PublishAsync("test",new TransDto());
+        _redisPublisher.PublishAsync("test_success",new TransDto());
+        return Ok();
+    }
+    /// <summary>
+    /// 发送消息 失败
+    /// </summary>
+    /// <param name="msg"></param>
+    /// <returns></returns>
+    [HttpPost]
+    public IActionResult PublishFailed([FromQuery] string msg="hello world")
+    {
+        _redisPublisher.PublishAsync("test_failed",new TransDto());
         return Ok();
     }
     [NonAction]
-    [RedisSubscribe("test")]
-    public void Test(TransDto msg,[FromRedis] RedisHeader headers)
+    [RedisSubscribe("test_success")]
+    public void TestSuccess(TransDto msg,[FromRedis] RedisHeader headers)
+    {
+        _logger.LogInformation($"received from {msg.Name} - {msg.Age}");
+    }
+    [NonAction]
+    [RedisSubscribe("test_failed")]
+    public void TestFailed(TransDto msg,[FromRedis] RedisHeader headers)
     {
         _logger.LogInformation($"received from {msg.Name} - {msg.Age}");
         throw new Exception("test");
