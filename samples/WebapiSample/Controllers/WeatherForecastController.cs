@@ -47,13 +47,13 @@ public class WeatherForecastController : ControllerBase,IRedisSubscribe
     [RedisSubscribe("test_success")]
     public void TestSuccess(TransDto msg,[FromRedis] RedisHeader headers)
     {
-        _logger.LogInformation($"received from {msg.Name} - {msg.Age}");
+        _logger.LogInformation($"received from {msg.Name} - {msg.Age}-{DateTime.Now}");
     }
     [NonAction]
     [RedisSubscribe("test_failed")]
     public void TestFailed(TransDto msg,[FromRedis] RedisHeader headers)
     {
-        _logger.LogInformation($"received from {msg.Name} - {msg.Age}");
+        _logger.LogInformation($"received from {msg.Name} - {msg.Age}-{DateTime.Now}");
         throw new Exception("test");
     }
     

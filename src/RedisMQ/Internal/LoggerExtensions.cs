@@ -50,12 +50,12 @@ namespace RedisMQ.Insternal
 
         public static void ConsumerExecuting(this ILogger logger, string className, string methodName, string group)
         {
-            logger.LogInformation($"Executing subscriber method '{className}.{methodName}' on group '{group}'");
+            logger.LogDebug($"Executing subscriber method '{className}.{methodName}' on group '{group}'");
         }
 
         public static void ConsumerExecuted(this ILogger logger, string className, string methodName, string group, double milliseconds, string? instance)
         {
-            logger.LogInformation($"Executed subscriber method '{className}.{methodName}' on group '{group}' with instance '{instance}' in {milliseconds}ms");
+            logger.LogDebug($"Executed subscriber method '{className}.{methodName}' on group '{group}' with instance '{instance}' in {milliseconds}ms");
         }
 
         public static void ConsumerExecuteFailed(this ILogger logger, string topic, string id, string? instance, Exception? ex)
