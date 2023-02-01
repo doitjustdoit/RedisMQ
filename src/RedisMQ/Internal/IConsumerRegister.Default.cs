@@ -34,9 +34,11 @@ namespace RedisMQ.Internal
         private Task? _compositeTask;
         private bool _disposed;
         private bool _isHealthy = true;
+        private readonly ISubscribeExecutor _executor;
 
-        public ConsumerRegister(ILogger<ConsumerRegister> logger, IServiceProvider serviceProvider)
+        public ConsumerRegister(ILogger<ConsumerRegister> logger, IServiceProvider serviceProvider,ISubscribeExecutor executor)
         {
+            _executor = executor;
             _logger = logger;
             _serviceProvider = serviceProvider;
             _options = serviceProvider.GetRequiredService<IOptions<RedisMQOptions>>().Value;
@@ -232,7 +234,7 @@ namespace RedisMQ.Internal
                         // client.Commit(sender);
                         var (stream, groupname, id) = ((string stream, string group, string id))sender;
                         message.Headers[Headers.StreamMessageId] = id;
-                        _dispatcher.EnqueueToExecute(message, executor!);
+                        ConsumeMessageAsync(message,executor!).ConfigureAwait(false).GetAwaiter().GetResult();
                     }
                 }
                 catch (Exception e)
@@ -245,6 +247,31 @@ namespace RedisMQ.Internal
                 }
             };
 
+        }
+
+        private async ValueTask ConsumeMessageAsync(Message message, ConsumerExecutorDescriptor? descriptor=null)
+        {
+            try
+            {
+                var res=await _executor.ExecuteAsync(message, descriptor, _cts!.Token).ConfigureAwait(false);
+                if (res.Succeeded)
+                {
+                    using var _consumerClient = _consumerClientFactory.Create(message.Headers[Headers.Group]);
+                    _consumerClient.Commit((message.Headers[Headers.MessageName],message.Headers[Headers.Group],message.Headers[Headers.StreamMessageId]));
+                }
+                else
+                {
+                    _logger.LogError(res.Exception,"An exception occurred when invoke subscriber.");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                //Ignore
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"An exception occurred when invoke subscriber. MessageId:{message.GetId()}");
+            }
         }
 
 

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DotNetCore.CAP.RedisStreams
+namespace RedisMQ.RedisStream
 {
     internal static class RedisErrorExtensions
     {

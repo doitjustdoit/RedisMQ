@@ -9,7 +9,8 @@
 3. 支持死信队列
 4. 消息保证至少消费一次
 5. 无重复消费
-6. 支持延迟队列 (待实现)
+6. 自动断线重连
+7. 支持延迟队列 (待实现)
 
 # 环境及依赖
 
@@ -52,6 +53,8 @@ await _redisPublisher.PublishAsync("test",new TransDto()); // topic ，消息内
 
 ## 接收消息
 
+对于Webapi项目，在Controller中直接写方法即可：
+
 ```c#
 [NonAction]
 [RedisSubscribe("test")]
@@ -59,7 +62,35 @@ public void Test(TransDto msg,[FromRedis] RedisHeader headers)
 {
     _logger.LogInformation($"received from {msg.Name} - {msg.Age}");
 }   
+```
 
+如果需要在自定义的类中使用，则该类必须继承接口`IRedisSubscribe`，同时该类必须在容器内注册过：
+
+```C#
+// 注册服务
+builder.Services.AddSingleton<CustomSubscribeClass>();
+
+
+public class CustomSubscribeClass:IRedisSubscribe
+{
+    private readonly ILogger<CustomSubscribeClass> _logger;
+
+    public CustomSubscribeClass(ILogger<CustomSubscribeClass> logger)
+    {
+        _logger = logger;
+    }
+    [RedisSubscribe("test_success")]
+    public void TestSuccess(WeatherForecastController.TransDto msg,[FromRedis] RedisHeader headers)
+    {
+        _logger.LogInformation($"received from {msg.Name} - {msg.Age}-{DateTime.Now}");
+    }
+    [RedisSubscribe("test_failed")]
+    public void TestFailed(WeatherForecastController.TransDto msg,[FromRedis] RedisHeader headers)
+    {
+        _logger.LogInformation($"received from {msg.Name} - {msg.Age}-{DateTime.Now}");
+        throw new Exception("test");
+    }
+}
 ```
 
 详细可参考示例工程：[https://github.com/li-zheng-hao/LZH.RedisMQ/tree/main/samples](https://github.com/li-zheng-hao/LZH.RedisMQ/tree/main/samples)
@@ -86,6 +117,18 @@ builder.Services.AddRedisMQ(mqOptions =>
 ```
 
 当重试达到上限次数时自动移送至全局的死信队列(所有消息)
+
+## 控制台应用
+
+对于非Webapi或Background Worker项目，可手动使用`ServiceCollection`注册对应服务，如:
+
+```C#
+var collection=new ServiceCollection();
+collection.AddRedisMQ(...);
+collection.AddLogging();
+var serviceProvider = serviceCollection.BuildServiceProvider();
+var publisher=serviceProvider.GetService<IRedisPublisher>();// 发送
+```
 
 # 性能测试
 

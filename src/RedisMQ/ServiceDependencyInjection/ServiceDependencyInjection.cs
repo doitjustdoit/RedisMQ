@@ -44,7 +44,7 @@ public static class ServiceDependencyInjection
         services.TryAddSingleton<TransportCheckProcessor>();
         services.TryAddSingleton<RefreshConnectionCapacityCheckProcessor>();
         if(options.FailedRetryCount > 0)
-            services.TryAddSingleton<PendingMessageRetryProcessor>();
+            services.TryAddSingleton<ScanFailedMessageProcessor>();
         //Sender
         services.TryAddSingleton<IMessageSender, MessageSender>();
 

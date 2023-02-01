@@ -1,5 +1,6 @@
 using RedisMQ;
 using StackExchange.Redis;
+using WebapiSample;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +25,7 @@ builder.Services.AddRedisMQ(mqOptions =>
     };
     // mqOptions.UseMessagePack();
 });
-
+builder.Services.AddSingleton<CustomSubscribeClass>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetCore.CAP.Processor;
 using RedisMQ.Insternal;
 using RedisMQ.Internal;
 using Microsoft.Extensions.DependencyInjection;
@@ -75,7 +74,7 @@ public class RedisProcessingServer : IProcessingServer
         }
         finally
         {
-            _logger.LogInformation("### CAP shutdown!");
+            _logger.LogInformation("### RedisMQ shutdown!");
         }
     }
 
@@ -90,7 +89,7 @@ public class RedisProcessingServer : IProcessingServer
         {
             _provider.GetRequiredService<TransportCheckProcessor>(),
             _provider.GetRequiredService<RefreshConnectionCapacityCheckProcessor>(),
-            _provider.GetRequiredService<PendingMessageRetryProcessor>(),
+            _provider.GetRequiredService<ScanFailedMessageProcessor>(),
         };
 
         return returnedProcessors.ToArray();

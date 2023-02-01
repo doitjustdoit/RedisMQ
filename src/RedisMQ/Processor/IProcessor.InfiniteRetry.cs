@@ -3,10 +3,9 @@
 
 using System;
 using System.Threading.Tasks;
-using RedisMQ.Processor;
 using Microsoft.Extensions.Logging;
 
-namespace DotNetCore.CAP.Processor;
+namespace RedisMQ.Processor;
 
 public class InfiniteRetryProcessor : IProcessor
 {

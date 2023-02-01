@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DotNetCore.CAP.Processor;
+namespace RedisMQ.Processor;
 
 public class ProcessingContext : IDisposable
 {

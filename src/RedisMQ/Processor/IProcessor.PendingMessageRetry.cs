@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetCore.CAP.Processor;
 using Microsoft.Extensions.DependencyInjection;
 using RedisMQ.Internal;
 using Microsoft.Extensions.Logging;
@@ -18,9 +17,9 @@ using RedisMQ.Transport;
 
 namespace RedisMQ.Processor;
 
-public class PendingMessageRetryProcessor : IProcessor
+public class ScanFailedMessageProcessor : IProcessor
 {
-    private readonly ILogger<PendingMessageRetryProcessor> _logger;
+    private readonly ILogger<ScanFailedMessageProcessor> _logger;
     private readonly TimeSpan _waitingInterval;
     private ConcurrentDictionary<string, IReadOnlyList<ConsumerExecutorDescriptor>> _groupingMatches;
     private readonly IServiceProvider _serviceProvider;
@@ -34,7 +33,7 @@ public class PendingMessageRetryProcessor : IProcessor
 
     private readonly IOptions<RedisMQOptions> _options;
 
-    public PendingMessageRetryProcessor(ILogger<PendingMessageRetryProcessor> logger,IOptions<RedisMQOptions> options,
+    public ScanFailedMessageProcessor(ILogger<ScanFailedMessageProcessor> logger,IOptions<RedisMQOptions> options,
         IConsumerClientFactory consumerClientFactory, IServiceProvider serviceProvider,IRedisStreamManager redisStreamManager)
     {
         _options = options;
@@ -42,7 +41,7 @@ public class PendingMessageRetryProcessor : IProcessor
         _redisStreamManager = redisStreamManager;
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _waitingInterval = TimeSpan.FromSeconds(options.Value.FailedRetryInterval);
+        _waitingInterval = TimeSpan.FromSeconds(3);
         _selector = _serviceProvider.GetRequiredService<MethodMatcherCache>();
     }
 

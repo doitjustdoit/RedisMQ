@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using DotNetCore.CAP.RedisStreams;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 

@@ -63,9 +63,9 @@ namespace RedisMQ.Internal
 
         #region tracing
 
-        private void TracingError(long? tracingTimestamp, TransportMessage message, BrokerAddress broker, OperateResult result)
+        private void TracingError(long? tracingTimestamp, TransportMessage message, OperateResult result)
         {
-            _logger.LogError($"timestamp: {tracingTimestamp} message: {message} broker: {broker} op result: {result}");
+            _logger.LogError($"timestamp: {tracingTimestamp} message: {message} op result: {result}");
         }
 
         #endregion

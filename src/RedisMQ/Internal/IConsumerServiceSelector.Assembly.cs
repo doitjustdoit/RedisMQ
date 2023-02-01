@@ -8,10 +8,6 @@ using System.Reflection;
 
 namespace RedisMQ.Internal
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// A <see cref="T:DotNetCore.CAP.Abstractions.IConsumerServiceSelector" /> implementation that scanning subscribers from the assembly.
-    /// </summary>
     public class AssemblyConsumerServiceSelector : ConsumerServiceSelector
     {
         private readonly Assembly[] _assemblies;

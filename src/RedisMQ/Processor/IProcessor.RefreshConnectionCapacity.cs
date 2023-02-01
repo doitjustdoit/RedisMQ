@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading.Tasks;
-using DotNetCore.CAP.Processor;
 using Microsoft.Extensions.Logging;
 using RedisMQ.RedisStream;
 

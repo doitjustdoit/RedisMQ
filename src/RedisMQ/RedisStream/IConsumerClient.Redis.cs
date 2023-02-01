@@ -49,6 +49,7 @@ namespace RedisMQ.RedisStream
 
         public void Listening(TimeSpan timeout, CancellationToken cancellationToken)
         {
+            // 旧消息需要单独线程处理
             _ = HandleForPendingMessageAsync(timeout,cancellationToken);
             _ = ListeningForMessagesAsync(timeout, cancellationToken);
             while (true)
@@ -59,7 +60,7 @@ namespace RedisMQ.RedisStream
             // ReSharper disable once FunctionNeverReturns
         }
 
-        private async Task HandleForPendingMessageAsync(TimeSpan timeout, CancellationToken cancellationToken)
+        private Task HandleForPendingMessageAsync(TimeSpan timeout, CancellationToken cancellationToken)
         {
             Task.Run(async () =>
             {
@@ -81,10 +82,10 @@ namespace RedisMQ.RedisStream
                             positions[i]=new StreamPosition(_topics[i], StreamPosition.Beginning);
                     }
                     if(pendingMessages.All(it=>it.Value.HasValue)==false)
-                        cancellationToken.WaitHandle.WaitOne(timeout*3);
+                        cancellationToken.WaitHandle.WaitOne(_options.Value.FailedRetryInterval);
                 }
             });
-           
+            return Task.CompletedTask;
         }
 
         private async Task ConsumePendingMessages(Dictionary<string, StreamEntry?> pendingMsgs)
