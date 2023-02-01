@@ -27,10 +27,6 @@ namespace RedisMQ.RedisStream
         public static TransportMessage Create(StreamEntry streamEntry, string? groupId = null)
         {
             var headersRaw = streamEntry[Headers];
-            if (headersRaw.IsNullOrEmpty)
-            {
-                throw new ArgumentException($"Redis stream entry with id {streamEntry.Id} missing cap headers");
-            }
                 
             var headers = JsonSerializer.Deserialize<IDictionary<string, string?>>(headersRaw!)!;
 

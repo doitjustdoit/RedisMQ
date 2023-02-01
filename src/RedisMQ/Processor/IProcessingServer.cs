@@ -89,7 +89,6 @@ public class RedisProcessingServer : IProcessingServer
         var returnedProcessors = new List<IProcessor>
         {
             _provider.GetRequiredService<TransportCheckProcessor>(),
-            // _provider.GetRequiredService<MessageNeedToRetryProcessor>(),
             _provider.GetRequiredService<RefreshConnectionCapacityCheckProcessor>(),
             _provider.GetRequiredService<PendingMessageRetryProcessor>(),
         };

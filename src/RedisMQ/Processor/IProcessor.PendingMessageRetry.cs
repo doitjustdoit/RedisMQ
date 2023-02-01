@@ -42,7 +42,7 @@ public class PendingMessageRetryProcessor : IProcessor
         _redisStreamManager = redisStreamManager;
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _waitingInterval = TimeSpan.FromSeconds(15);
+        _waitingInterval = TimeSpan.FromSeconds(options.Value.FailedRetryInterval);
         _selector = _serviceProvider.GetRequiredService<MethodMatcherCache>();
     }
 

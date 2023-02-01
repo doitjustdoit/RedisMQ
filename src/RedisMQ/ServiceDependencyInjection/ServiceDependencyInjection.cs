@@ -41,7 +41,6 @@ public static class ServiceDependencyInjection
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IProcessingServer, RedisProcessingServer>());
 
         //Queue's message processor
-        // services.TryAddSingleton<MessageNeedToRetryProcessor>();
         services.TryAddSingleton<TransportCheckProcessor>();
         services.TryAddSingleton<RefreshConnectionCapacityCheckProcessor>();
         if(options.FailedRetryCount > 0)
@@ -54,12 +53,8 @@ public static class ServiceDependencyInjection
         // Warning: IPublishMessageSender need to inject at extension project. 
         services.TryAddSingleton<ISubscribeExecutor, SubscribeExecutor>();
 
-       
-
-        
         services.TryAddSingleton<IDispatcher, Dispatcher>();
 
-        services.Configure(setupAction);
 
         //Startup and Hosted 
         services.AddSingleton<Bootstrapper>();

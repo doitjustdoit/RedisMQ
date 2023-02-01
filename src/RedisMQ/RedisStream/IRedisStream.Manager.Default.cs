@@ -34,7 +34,6 @@ namespace RedisMQ.RedisStream
 
             //The object returned from GetDatabase is a cheap pass - thru object, and does not need to be stored
             var database = _redis!.GetDatabase();
-
             await database.TryGetOrCreateStreamConsumerGroupAsync(stream, consumerGroup)
                 .ConfigureAwait(false);
         }
@@ -45,7 +44,7 @@ namespace RedisMQ.RedisStream
                 .ConfigureAwait(false);
 
             //The object returned from GetDatabase is a cheap pass - thru object, and does not need to be stored
-            await _redis!.GetDatabase().StreamAddAsync(stream, message)
+            await _redis!.GetDatabase().StreamAddAsync(stream, message,maxLength:_options.MaxQueueLength,useApproximateMaxLength:true)
                 .ConfigureAwait(false);
         }
 
@@ -95,7 +94,7 @@ namespace RedisMQ.RedisStream
             for (var i = 0; i < topics.Length; i++)
             {
               
-                if(await TryLockMessageAsync(topics[i],groupId,streamPendingMessageInfos[i].MessageId.ToString(),TimeSpan.FromSeconds(30)))
+                if(await TryLockMessageAsync(topics[i],groupId,streamPendingMessageInfos[i].MessageId.ToString(),TimeSpan.FromSeconds(_options.LockMessageSecond)))
                 {
                     var msg = await db.StreamReadGroupAsync(new RedisKey(topics[i]), new RedisValue(groupId),
                         new RedisValue(groupId), positions[i].Position, 1);
@@ -129,8 +128,8 @@ namespace RedisMQ.RedisStream
             await ConnectAsync()
                 .ConfigureAwait(false);
             var db=_redis.GetDatabase();
-            var msgId=GetSearchingMessageId(messageId);
-            var msg = await db.StreamReadGroupAsync(topic,groupId,groupId,msgId,1);
+            var msgId=new MessageId(messageId);
+            var msg = await db.StreamReadGroupAsync(topic,groupId,groupId,msgId.GetPreviousMessageId(),1);
             return msg.FirstOrDefault();
         }
 
@@ -147,7 +146,8 @@ namespace RedisMQ.RedisStream
                 .ConfigureAwait(false);
 
             //The object returned from GetDatabase is a cheap pass - thru object, and does not need to be stored
-            await _redis!.GetDatabase().StreamAddAsync(message.GetName(),   "value",JsonSerializer.Serialize(message))
+            await _redis!.GetDatabase().StreamAddAsync(message.GetName(),   "value",JsonSerializer.Serialize(message)
+                ,maxLength:_options.MaxQueueLength,useApproximateMaxLength:true)
                 .ConfigureAwait(false);
             return true;
         }
@@ -158,7 +158,6 @@ namespace RedisMQ.RedisStream
             await Ack(msg.GetName(), msg.GetGroup(), messageId);
         }
 
-
         public async Task Ack(string stream, string consumerGroup, string messageId)
         {
             await ConnectAsync()
@@ -166,8 +165,6 @@ namespace RedisMQ.RedisStream
             await _redis!.GetDatabase().StreamAcknowledgeAsync(stream, consumerGroup, messageId)
                 .ConfigureAwait(false);
         }
-
-       
 
         private async Task<IEnumerable<StackExchange.Redis.RedisStream>> TryReadConsumerGroupAsync(string consumerGroup,
             StreamPosition[] positions, CancellationToken token)
@@ -218,22 +215,6 @@ namespace RedisMQ.RedisStream
             _redis = await _connectionsPool.ConnectAsync()
                 .ConfigureAwait(false);
         }
-        /// <summary>
-        /// https://stackoverflow.com/questions/62790203/use-xreadgroup-to-get-the-id-specified
-        /// </summary>
-        /// <param name="targetMessageId"></param>
-        /// <returns></returns>
-        private string GetSearchingMessageId(string targetMessageId)
-        {
-            var msgSplitRes=targetMessageId.Split('-');
-            var timeStamp=Convert.ToInt64(msgSplitRes[0]);
-            var order=Convert.ToInt64(msgSplitRes[1]);
-            if (order == 0)
-            {
-                return $"{timeStamp - 1}-0";
-            }
-
-            return $"{timeStamp}-{order - 1}";
-        }
+        
     }
 }

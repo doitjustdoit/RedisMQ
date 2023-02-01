@@ -66,11 +66,26 @@ namespace RedisMQ
         /// 当为0时不会转移到死信队列
         /// </summary>
         public uint FailedRetryCount { get; set; } = 3;
+
+        /// <summary>
+        /// 失败重试间隔时间 有一定延迟 单位秒
+        /// 重试与<see cref="FailedRetryInterval"/>属性配合使用,两者取最大值为重试间隔
+        /// </summary>
+        public int FailedRetryInterval { get; set; } = 10;
         
+        /// <summary>
+        /// 消费消息时加锁时间,单位秒
+        /// 会影响重试间隔
+        /// </summary>
+        public int LockMessageSecond { get; set; } = 10;
         /// <summary>
         /// 超过<see cref="FailedRetryCount"/>次数后将会通知
         /// </summary>
-        public Action<TransportMessage> FailedThresholdCallback { get; set; } 
+        public Action<TransportMessage> FailedThresholdCallback { get; set; }
 
+        /// <summary>
+        /// 每个Topic使用队列的最大的长度，超出后队列最前面的消息将会被删除
+        /// </summary>
+        public int MaxQueueLength { get; set; } = 100_000;
     }
 }

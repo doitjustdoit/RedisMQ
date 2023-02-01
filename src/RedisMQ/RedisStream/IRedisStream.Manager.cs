@@ -33,7 +33,7 @@ namespace RedisMQ.RedisStream
         Task<StreamEntry> PollStreamsCertainMessageAsync(string topic, string groupId,string messageId,
             CancellationToken cancellationToken);
         Task<bool> TryLockMessageAsync(string topic, string groupName, string messageId, TimeSpan lockTime);
-        Task<bool> PublishAsync(Message message);
         Task TransferFailedMessageToDeadLetterAsync(TransportMessage msg, string messageId);
+       
     }
 }

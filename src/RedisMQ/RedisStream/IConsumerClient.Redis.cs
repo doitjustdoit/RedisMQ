@@ -148,7 +148,7 @@ namespace RedisMQ.RedisStream
                         {
                             var message = RedisMessage.Create(entry, _groupId);
                             await _redis.TryLockMessageAsync(stream.Key.ToString(), _groupId, entry.Id.ToString(),
-                                TimeSpan.FromSeconds(10));
+                                TimeSpan.FromSeconds(_options.Value.LockMessageSecond));
                             OnMessageReceived?.Invoke((stream.Key.ToString(), _groupId, entry.Id.ToString()), message);
                         }
                         catch (Exception ex)

@@ -21,7 +21,7 @@ namespace RedisMQ.RedisStream
 
         public override void WriteLine(string? value)
         {
-            logger.LogInformation(value);
+            logger.LogDebug(value);
         }
     }
 }
