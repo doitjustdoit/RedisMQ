@@ -43,7 +43,7 @@ public class RedisProcessingServer : IProcessingServer
 
         _context = new ProcessingContext(_provider, _cts.Token);
 
-        var processorTasks = GetProcessors()
+        var processorTasks = _provider.GetServices<IProcessor>()
             .Select(p => p.ProcessAsync(_context));
         _compositeTask = Task.WhenAll(processorTasks);
 
@@ -77,16 +77,5 @@ public class RedisProcessingServer : IProcessingServer
         }
     }
 
-    private IProcessor[] GetProcessors()
-    {
-        // var returnedProcessors = new List<IProcessor>
-        // {
-        //     _provider.GetRequiredService<TransportCheckProcessor>(),
-        //     _provider.GetRequiredService<RefreshConnectionCapacityCheckProcessor>(),
-        //     _provider.GetRequiredService<ScanFailedMessageProcessor>(),
-        // };
-        var returnedProcessors= _provider.GetServices<IProcessor>();
-
-        return returnedProcessors.ToArray();
-    }
+  
 }

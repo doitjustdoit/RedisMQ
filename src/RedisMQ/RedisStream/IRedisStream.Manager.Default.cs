@@ -56,12 +56,16 @@ namespace RedisMQ.RedisStream
 
             while (true)
             {
-                var result = await TryReadConsumerGroupAsync(consumerGroup, positions.ToArray(), token)
+                var result = await TryReadConsumerGroupAsync(consumerGroup, positions.ToArray(),token)
                     .ConfigureAwait(false);
 
                 yield return result;
 
-                token.WaitHandle.WaitOne(pollDelay);
+                if (result.All(it => it.Entries.Length == 0))
+                {
+                    _logger.LogDebug("no new message, sleep poll delay time {pollDelay}", pollDelay);
+                    token.WaitHandle.WaitOne(pollDelay);
+                }
             }
         }
 
@@ -93,7 +97,12 @@ namespace RedisMQ.RedisStream
             Dictionary<string,StreamEntry?> res = new();
             for (var i = 0; i < topics.Length; i++)
             {
-              
+
+                if (!streamPendingMessageInfos[i].MessageId.HasValue)
+                {
+                    res.Add(topics[i],null);  
+                    continue;
+                }
                 if(await TryLockMessageAsync(topics[i],groupId,streamPendingMessageInfos[i].MessageId.ToString(),TimeSpan.FromSeconds(_options.LockMessageSecond)))
                 {
                     var msg = await db.StreamReadGroupAsync(new RedisKey(topics[i]), new RedisValue(groupId),
@@ -138,18 +147,6 @@ namespace RedisMQ.RedisStream
             await ConnectAsync().ConfigureAwait(false);
             return await _redis.GetDatabase().StringSetAsync($"RedisMQ:{topic}:{groupName}:{messageId}", "1",
                 lockTime, When.NotExists);
-        }
-
-        public async Task<bool> PublishAsync(Message message)
-        {
-            await ConnectAsync()
-                .ConfigureAwait(false);
-
-            //The object returned from GetDatabase is a cheap pass - thru object, and does not need to be stored
-            await _redis!.GetDatabase().StreamAddAsync(message.GetName(),   "value",JsonSerializer.Serialize(message)
-                ,maxLength:_options.MaxQueueLength,useApproximateMaxLength:true)
-                .ConfigureAwait(false);
-            return true;
         }
 
         public async Task TransferFailedMessageToDeadLetterAsync(TransportMessage msg,string messageId)

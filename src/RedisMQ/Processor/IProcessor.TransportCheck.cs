@@ -11,13 +11,13 @@ namespace RedisMQ.Processor;
 public class TransportCheckProcessor : IProcessor
 {
     private readonly ILogger<TransportCheckProcessor> _logger;
-    private readonly IConsumerRegister _register;
+    private readonly IConsumerDispatcher _dispatcher;
     private readonly TimeSpan _waitingInterval;
 
-    public TransportCheckProcessor(ILogger<TransportCheckProcessor> logger, IConsumerRegister register)
+    public TransportCheckProcessor(ILogger<TransportCheckProcessor> logger, IConsumerDispatcher dispatcher)
     {
         _logger = logger;
-        _register = register;
+        _dispatcher = dispatcher;
         _waitingInterval = TimeSpan.FromSeconds(30);
     }
 
@@ -31,11 +31,11 @@ public class TransportCheckProcessor : IProcessor
 
             _logger.LogDebug("Transport connection checking...");
 
-            if (!_register.IsHealthy())
+            if (!_dispatcher.IsHealthy())
             {
                 _logger.LogWarning("Transport connection is unhealthy, reconnection...");
 
-                _register.ReStart();
+                _dispatcher.ReStart();
             }
             else
             {

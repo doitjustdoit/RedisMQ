@@ -38,27 +38,11 @@ namespace RedisMQ.Internal
 
         public async Task<OperateResult> SendAsync(Message message)
         {
-            var executedResult = await SendWithoutRetryAsync(message);
-            var result = executedResult.Item2;
-            return result;
-        }
-
-        private async Task<(bool, OperateResult)> SendWithoutRetryAsync(Message message)
-        {
             var transportMsg = await _serializer.SerializeAsync(message);
 
             var result = await _transport.SendAsync(transportMsg);
 
-            if (result.Succeeded)
-            {
-                return (false, OperateResult.Success);
-            }
-            else
-            {
-                // var needRetry = await SetFailedState(message, result.Exception!);
-
-                return (false, OperateResult.Failed(result.Exception!));
-            }
+            return result;
         }
 
         #region tracing

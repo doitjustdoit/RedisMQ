@@ -6,6 +6,7 @@ using StackExchange.Redis;
 
 #if DEBUG
 TestBenchmarks testBenchmark = new();
+var redis=ConnectionMultiplexer.Connect("localhost:6379");
 testBenchmark.Setup();
 Stopwatch sw = new();
 // sw.Restart();

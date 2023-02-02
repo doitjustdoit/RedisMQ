@@ -16,7 +16,6 @@ public class TestBenchmarks
 {
     private ServiceProvider _provider;
     private IRedisPublisher _publisher;
-    private IDispatcher _dispacher;
     private ISerializer _serializer;
     private string _rawData;
     private const string ConnectionString="localhost:55004,password=redispw";
@@ -45,7 +44,6 @@ public class TestBenchmarks
         _services.AddLogging();
         _provider = _services.BuildServiceProvider();
         _publisher = _provider.GetRequiredService<IRedisPublisher>();
-        _dispacher = _provider.GetRequiredService<IDispatcher>();
         _serializer = _provider.GetRequiredService<ISerializer>();
         _rawData = _serializer.Serialize(new Message(new Dictionary<string, string?>(), new TestTransDto()));
 

@@ -67,22 +67,42 @@ namespace RedisMQ.RedisStream
                 var positions = _topics.Select(it => new StreamPosition(it, StreamPosition.Beginning)).ToArray();
                 while (true)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    //first time, we want to read our pending messages, in case we crashed and are recovering.
-                    var pendingMsgInfos =
-                        (await _redis.PollStreamsPendingMessagesInfoAsync(_topics, _groupId,positions, cancellationToken)).ToArray();
-                    var pendingMessages =
-                    await _redis.PollStreamsPendingMessagesAsync(_topics, _groupId,positions,pendingMsgInfos, cancellationToken);
-                    await ConsumePendingMessages(pendingMessages);
-                    for (var i = 0; i < positions.Length; i++)
+                    try
                     {
-                        if(pendingMessages[_topics[i]].HasValue&&pendingMsgInfos[i].MessageId.HasValue)
-                            positions[i]=new StreamPosition(_topics[i], pendingMsgInfos[i].MessageId);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        //first time, we want to read our pending messages, in case we crashed and are recovering.
+                        var pendingMsgInfos =
+                            (await _redis.PollStreamsPendingMessagesInfoAsync(_topics, _groupId, positions,
+                                cancellationToken)).ToArray();
+                        var pendingMessages =
+                            await _redis.PollStreamsPendingMessagesAsync(_topics, _groupId, positions, pendingMsgInfos,
+                                cancellationToken);
+                        await ConsumePendingMessages(pendingMessages);
+                        for (var i = 0; i < positions.Length; i++)
+                        {
+                            if (pendingMessages[_topics[i]].HasValue && pendingMsgInfos[i].MessageId.HasValue)
+                                positions[i] = new StreamPosition(_topics[i], pendingMsgInfos[i].MessageId);
+                            else
+                                positions[i] = new StreamPosition(_topics[i], StreamPosition.Beginning);
+                        }
+                        // 没有需要处理的历史消息，等待一段时间
+                        // TODO 待优化 当某个消息重试再次失败时，该队列后续的消息都无法被重试，直到该消息被消费成功或者移送至死信队列
+                        if (pendingMessages.Any(it => it.Value.HasValue)==false)
+                            cancellationToken.WaitHandle.WaitOne(_options.Value.FailedRetryInterval*1000);
                         else
-                            positions[i]=new StreamPosition(_topics[i], StreamPosition.Beginning);
+                        {
+                            cancellationToken.WaitHandle.WaitOne(1);
+                        }
                     }
-                    if(pendingMessages.All(it=>it.Value.HasValue)==false)
-                        cancellationToken.WaitHandle.WaitOne(_options.Value.FailedRetryInterval);
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e,"Error while consuming pending messages");
+                    }
+                   
                 }
             });
             return Task.CompletedTask;
@@ -148,9 +168,9 @@ namespace RedisMQ.RedisStream
                         try
                         {
                             var message = RedisMessage.Create(entry, _groupId);
-                            await _redis.TryLockMessageAsync(stream.Key.ToString(), _groupId, entry.Id.ToString(),
-                                TimeSpan.FromSeconds(_options.Value.LockMessageSecond));
-                            OnMessageReceived?.Invoke((stream.Key.ToString(), _groupId, entry.Id.ToString()), message);
+                            if(await _redis.TryLockMessageAsync(stream.Key.ToString(), _groupId, entry.Id.ToString(),
+                                   TimeSpan.FromSeconds(_options.Value.LockMessageSecond)))
+                                OnMessageReceived?.Invoke((stream.Key.ToString(), _groupId, entry.Id.ToString()), message);
                         }
                         catch (Exception ex)
                         {

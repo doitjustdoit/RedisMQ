@@ -28,10 +28,6 @@ namespace RedisMQ.RedisStream
             {
                 await _redis.PublishAsync(message.GetName(), message.AsStreamEntries())
                 .ConfigureAwait(false);
-                // await _redis.PublishAsync("test", new NameValueEntry[]{ new NameValueEntry("test","test")})
-                    // .ConfigureAwait(false);
-                // _logger.LogDebug($"Redis message [{message.GetName()}] has been published.");
-
                 return OperateResult.Success;
             }
             catch (Exception ex)

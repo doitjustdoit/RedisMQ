@@ -22,7 +22,7 @@ public static class ServiceDependencyInjection
         services.TryAddSingleton<ISubscribeInvoker, SubscribeInvoker>();
         services.TryAddSingleton<MethodMatcherCache>();
 
-        services.TryAddSingleton<IConsumerRegister, ConsumerRegister>();
+        services.TryAddSingleton<IConsumerDispatcher, ConsumerDispatcher>();
         //Options and extension service
         var options = new RedisMQOptions();
         setupAction(options);
@@ -33,11 +33,11 @@ public static class ServiceDependencyInjection
         }
         
         //Processors
+        // services.TryAddEnumerable(
+        //     ServiceDescriptor.Singleton<IProcessingServer, IDispatcher>(sp => sp.GetRequiredService<IDispatcher>()));
         services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IProcessingServer, IDispatcher>(sp => sp.GetRequiredService<IDispatcher>()));
-        services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IProcessingServer, IConsumerRegister>(sp =>
-                sp.GetRequiredService<IConsumerRegister>()));
+            ServiceDescriptor.Singleton<IProcessingServer, IConsumerDispatcher>(sp =>
+                sp.GetRequiredService<IConsumerDispatcher>()));
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IProcessingServer, RedisProcessingServer>());
 
         //Queue's message processor
@@ -53,7 +53,7 @@ public static class ServiceDependencyInjection
         // Warning: IPublishMessageSender need to inject at extension project. 
         services.TryAddSingleton<ISubscribeExecutor, SubscribeExecutor>();
 
-        services.TryAddSingleton<IDispatcher, Dispatcher>();
+        // services.TryAddSingleton<IDispatcher, Dispatcher>();
 
 
         //Startup and Hosted 

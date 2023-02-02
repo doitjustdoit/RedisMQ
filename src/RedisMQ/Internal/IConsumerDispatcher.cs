@@ -6,7 +6,7 @@ namespace RedisMQ.Internal
     /// <summary>
     /// Handler received message of subscribed.
     /// </summary>
-    public interface IConsumerRegister : IProcessingServer
+    public interface IConsumerDispatcher : IProcessingServer
     {
         bool IsHealthy();
 

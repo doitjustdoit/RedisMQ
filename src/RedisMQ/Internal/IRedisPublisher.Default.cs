@@ -15,7 +15,7 @@ namespace RedisMQ.Internal
 {
     internal class RedisMQPublisher : IRedisPublisher
     {
-        private readonly IDispatcher _dispatcher;
+        // private readonly IDispatcher _dispatcher;
         private readonly RedisMQOptions _redisMQOptions;
         private readonly ILogger<RedisMQPublisher> _logger;
         private readonly IMessageSender _messageSender;
@@ -23,7 +23,7 @@ namespace RedisMQ.Internal
         public RedisMQPublisher(IServiceProvider service)
         {
             ServiceProvider = service;
-            _dispatcher = service.GetRequiredService<IDispatcher>();
+            // _dispatcher = service.GetRequiredService<IDispatcher>();
             _messageSender = service.GetRequiredService<IMessageSender>();
             _logger= service.GetRequiredService<ILogger<RedisMQPublisher>>();
             _redisMQOptions = service.GetRequiredService<IOptions<RedisMQOptions>>().Value;

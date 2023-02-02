@@ -2,9 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace RedisMQ.Internal
 {
-    internal class ConsumerRegister : IConsumerRegister
+    internal class ConsumerDispatcher : IConsumerDispatcher
     {
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
@@ -26,7 +24,6 @@ namespace RedisMQ.Internal
         private readonly RedisMQOptions _options;
 
         private IConsumerClientFactory _consumerClientFactory = default!;
-        private IDispatcher _dispatcher = default!;
         private ISerializer _serializer = default!;
 
         private MethodMatcherCache _selector = default!;
@@ -36,7 +33,7 @@ namespace RedisMQ.Internal
         private bool _isHealthy = true;
         private readonly ISubscribeExecutor _executor;
 
-        public ConsumerRegister(ILogger<ConsumerRegister> logger, IServiceProvider serviceProvider,ISubscribeExecutor executor)
+        public ConsumerDispatcher(ILogger<ConsumerDispatcher> logger, IServiceProvider serviceProvider,ISubscribeExecutor executor)
         {
             _executor = executor;
             _logger = logger;
@@ -52,7 +49,6 @@ namespace RedisMQ.Internal
         public void Start(CancellationToken stoppingToken)
         {
             _selector = _serviceProvider.GetRequiredService<MethodMatcherCache>();
-            _dispatcher = _serviceProvider.GetRequiredService<IDispatcher>();
             _serializer = _serviceProvider.GetRequiredService<ISerializer>();
             _consumerClientFactory = _serviceProvider.GetRequiredService<IConsumerClientFactory>();
 
